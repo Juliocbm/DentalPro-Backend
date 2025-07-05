@@ -1,0 +1,6 @@
+@DentalPro.Api_HostAddress = http://localhost:5139
+
+GET {{DentalPro.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
