@@ -1,4 +1,4 @@
-﻿// Infrastructure/Persistence/ApplicationDbContext.cs
+// Infrastructure/Persistence/ApplicationDbContext.cs
 using Microsoft.EntityFrameworkCore;
 using DentalPro.Domain.Entities;
 using System.Reflection;
@@ -33,16 +33,21 @@ namespace DentalPro.Infrastructure.Persistence
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
             // Filtro global por IdConsultorio para entidades que lo incluyan
-            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            // Solo aplicar el filtro si tenemos un ID de consultorio
+            if (_consultorioId.HasValue)
             {
-                if (entityType.ClrType.GetProperty("IdConsultorio") != null)
+                foreach (var entityType in modelBuilder.Model.GetEntityTypes())
                 {
-                    var parameter = Expression.Parameter(entityType.ClrType, "e");
-                    var property = Expression.Property(parameter, "IdConsultorio");
-                    var constant = Expression.Constant(_consultorioId);
-                    var body = Expression.Equal(property, constant);
-                    var lambda = Expression.Lambda(body, parameter);
-                    modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+                    if (entityType.ClrType.GetProperty("IdConsultorio") != null)
+                    {
+                        var parameter = Expression.Parameter(entityType.ClrType, "e");
+                        var property = Expression.Property(parameter, "IdConsultorio");
+                        var propertyType = ((PropertyInfo)property.Member).PropertyType;
+                        var constant = Expression.Constant(_consultorioId.Value, propertyType);
+                        var body = Expression.Equal(property, constant);
+                        var lambda = Expression.Lambda(body, parameter);
+                        modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+                    }
                 }
             }
         }
