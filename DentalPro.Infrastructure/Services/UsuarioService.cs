@@ -1,7 +1,7 @@
 using DentalPro.Application.Interfaces;
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Domain.Entities;
-
+using BCrypt.Net;
 namespace DentalPro.Infrastructure.Services;
 
 public class UsuarioService : IUsuarioService
@@ -41,7 +41,7 @@ public class UsuarioService : IUsuarioService
 
         // Hash de la contraseña
         usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
-        
+
         // Generar ID si no existe
         if (usuario.IdUsuario == Guid.Empty)
         {

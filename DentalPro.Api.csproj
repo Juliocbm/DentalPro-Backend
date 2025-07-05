@@ -7,13 +7,30 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DentalPro.Application\**" />
+    <Compile Remove="DentalPro.Domain\**" />
+    <Compile Remove="DentalPro.Infrastructure\**" />
+    <Content Remove="DentalPro.Application\**" />
+    <Content Remove="DentalPro.Domain\**" />
+    <Content Remove="DentalPro.Infrastructure\**" />
+    <EmbeddedResource Remove="DentalPro.Application\**" />
+    <EmbeddedResource Remove="DentalPro.Domain\**" />
+    <EmbeddedResource Remove="DentalPro.Infrastructure\**" />
+    <None Remove="DentalPro.Application\**" />
+    <None Remove="DentalPro.Domain\**" />
+    <None Remove="DentalPro.Infrastructure\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.17" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.17" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DentalPro.Application\DentalPro.Application.csproj" />
+    <ProjectReference Include="DentalPro.Application\DentalPro.Application.csproj" />
+    <ProjectReference Include="DentalPro.Infrastructure\DentalPro.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
