@@ -107,8 +107,11 @@ public class AuthService : IAuthService
 
         // Agregar el usuario a la base de datos
         await _usuarioRepository.AddAsync(newUser);
+        
+        // IMPORTANTE: Guardar el usuario en la base de datos antes de asignarle roles
+        await _usuarioRepository.SaveChangesAsync();
 
-        // Asignar roles
+        // Asignar roles (ahora el usuario ya existe en la base de datos)
         if (request.Roles != null && request.Roles.Any())
         {
             foreach (var rolNombre in request.Roles)
@@ -121,8 +124,8 @@ public class AuthService : IAuthService
             // Asignar rol por defecto si no se especifica
             await _usuarioRepository.AsignarRolAsync(newUser.IdUsuario, "Usuario");
         }
-
-        await _usuarioRepository.SaveChangesAsync();
+        
+        // No es necesario llamar a SaveChangesAsync nuevamente aquí, ya que AsignarRolAsync ya guarda los cambios
 
         // Obtener los roles asignados
         var userRoles = await _usuarioRepository.GetUserRolesAsync(newUser.IdUsuario);
