@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using DentalPro.Domain.Entities;
 
@@ -8,7 +8,7 @@ public class ConsultorioConfiguration : IEntityTypeConfiguration<Consultorio>
 {
     public void Configure(EntityTypeBuilder<Consultorio> builder)
     {
-        builder.ToTable("Consultorio");
+        builder.ToTable("Consultorio", "configuracion");
 
         builder.HasKey(c => c.IdConsultorio);
 

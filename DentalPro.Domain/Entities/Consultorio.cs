@@ -4,9 +4,6 @@ public class Consultorio
 {
     public Guid IdConsultorio { get; set; }
     public string Nombre { get; set; } = null!;
-    public string? Direccion { get; set; }
-    public string? Telefono { get; set; }
-    public string? Email { get; set; }
     public string? RazonSocial { get; set; }
     public string? RFC { get; set; }
     public string? Logo { get; set; }

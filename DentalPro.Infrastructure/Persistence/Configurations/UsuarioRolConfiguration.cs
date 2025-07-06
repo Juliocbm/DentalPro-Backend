@@ -1,4 +1,4 @@
-﻿using DentalPro.Domain.Entities;
+using DentalPro.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -6,7 +6,7 @@ public class UsuarioRolConfiguration : IEntityTypeConfiguration<UsuarioRol>
 {
     public void Configure(EntityTypeBuilder<UsuarioRol> builder)
     {
-        builder.ToTable("UsuarioRol");
+        builder.ToTable("UsuarioRol", "seguridad");
 
         builder.HasKey(ur => new { ur.IdUsuario, ur.IdRol });
 

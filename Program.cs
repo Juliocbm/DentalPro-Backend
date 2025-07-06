@@ -63,50 +63,6 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-// Crear la base de datos si no existe al iniciar la aplicación
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<DentalPro.Infrastructure.Persistence.ApplicationDbContext>();
-    dbContext.Database.EnsureCreated();
-    
-    // Inicializar datos predeterminados si es necesario
-    if (!dbContext.Consultorios.Any())
-    {
-        // Crear un consultorio predeterminado
-        var consultorioId = Guid.NewGuid();
-        dbContext.Consultorios.Add(new DentalPro.Domain.Entities.Consultorio
-        {
-            IdConsultorio = consultorioId,
-            Nombre = "Consultorio Predeterminado",
-            Direccion = "Dirección Predeterminada",
-            Telefono = "123456789",
-            Email = "info@consultorio.com",
-            Activo = true
-        });
-        
-        // Crear roles predeterminados si no existen
-        var roles = new[] { "Administrador", "Doctor", "Recepcionista", "Usuario" };
-        foreach (var rolNombre in roles)
-        {
-            if (!dbContext.Set<DentalPro.Domain.Entities.Rol>().Any(r => r.Nombre == rolNombre))
-            {
-                dbContext.Set<DentalPro.Domain.Entities.Rol>().Add(new DentalPro.Domain.Entities.Rol
-                {
-                    IdRol = Guid.NewGuid(),
-                    Nombre = rolNombre,
-                    Descripcion = $"Rol de {rolNombre}"
-                });
-            }
-        }
-        
-        dbContext.SaveChanges();
-        
-        // Mostrar información útil en la consola
-        Console.WriteLine($"Consultorio predeterminado creado con ID: {consultorioId}");
-        Console.WriteLine("Usa este ID para registrar el primer usuario.");
-    }
-}
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
