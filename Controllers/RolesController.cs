@@ -25,7 +25,8 @@ public class RolesController : ControllerBase
         var rolesDto = roles.Select(r => new RolDto
         {
             IdRol = r.IdRol,
-            Nombre = r.Nombre
+            Nombre = r.Nombre,
+            Descripcion = r.Descripcion
         }).ToList();
         
         return Ok(rolesDto);
@@ -43,31 +44,21 @@ public class RolesController : ControllerBase
         var rolDto = new RolDto
         {
             IdRol = rol.IdRol,
-            Nombre = rol.Nombre
+            Nombre = rol.Nombre,
+            Descripcion = rol.Descripcion
         };
         
         return Ok(rolDto);
     }
 
     [HttpPost]
-    public async Task<ActionResult<RolDto>> CreateRol([FromBody] RolDto rolDto)
+    public async Task<ActionResult<RolDto>> CreateRol([FromBody] RolDto rol)
     {
         try
-        {
-            var rol = new Rol
-            {
-                Nombre = rolDto.Nombre
-            };
-
+        {          
             var createdRol = await _rolService.CreateAsync(rol);
-            
-            var result = new RolDto
-            {
-                IdRol = createdRol.IdRol,
-                Nombre = createdRol.Nombre
-            };
 
-            return CreatedAtAction(nameof(GetRol), new { id = result.IdRol }, result);
+            return CreatedAtAction(nameof(GetRol), new { id = createdRol.IdRol }, createdRol);
         }
         catch (Exception ex)
         {
@@ -93,7 +84,7 @@ public class RolesController : ControllerBase
 
             rol.Nombre = rolDto.Nombre;
             
-            var result = await _rolService.UpdateAsync(rol);
+            var result = await _rolService.UpdateAsync(rolDto);
             if (!result)
             {
                 return BadRequest("No se pudo actualizar el rol");

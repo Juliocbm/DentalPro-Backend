@@ -1,3 +1,5 @@
+using AutoMapper;
+using DentalPro.Application.DTOs.Rol;
 using DentalPro.Application.Interfaces;
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Domain.Entities;
@@ -7,10 +9,12 @@ namespace DentalPro.Infrastructure.Services;
 public class RolService : IRolService
 {
     private readonly IRolRepository _rolRepository;
+    private readonly IMapper _mapper;
 
-    public RolService(IRolRepository rolRepository)
+    public RolService(IRolRepository rolRepository, IMapper mapper)
     {
         _rolRepository = rolRepository;
+        _mapper = mapper;
     }
 
     public async Task<IEnumerable<Rol>> GetAllAsync()
@@ -28,43 +32,50 @@ public class RolService : IRolService
         return await _rolRepository.GetByNombreAsync(nombre);
     }
 
-    public async Task<Rol> CreateAsync(Rol rol)
+    public async Task<RolDto> CreateAsync(RolDto rolDto)
     {
         // Verificar si ya existe un rol con el mismo nombre
-        var existingRol = await _rolRepository.GetByNombreAsync(rol.Nombre);
+        var existingRol = await _rolRepository.GetByNombreAsync(rolDto.Nombre);
         if (existingRol != null)
         {
-            throw new Exception($"Ya existe un rol con el nombre {rol.Nombre}");
+            throw new Exception($"Ya existe un rol con el nombre {rolDto.Nombre}");
         }
 
         // Generar ID si no existe
-        if (rol.IdRol == Guid.Empty)
+        if (rolDto.IdRol == Guid.Empty)
         {
-            rol.IdRol = Guid.NewGuid();
+            rolDto.IdRol = Guid.NewGuid();
         }
 
-        var result = await _rolRepository.AddAsync(rol);
+        // Mapear automáticamente del DTO a la entidad de dominio
+        var rolEntity = _mapper.Map<Rol>(rolDto);
+
+        // Guardar la entidad en la base de datos
+        await _rolRepository.AddAsync(rolEntity);
         await _rolRepository.SaveChangesAsync();
         
-        return result;
+        return rolDto;
     }
 
-    public async Task<bool> UpdateAsync(Rol rol)
+    public async Task<bool> UpdateAsync(RolDto rolDto)
     {
-        var existingRol = await _rolRepository.GetByIdAsync(rol.IdRol);
+        var existingRol = await _rolRepository.GetByIdAsync(rolDto.IdRol);
         if (existingRol == null)
         {
             return false;
         }
 
         // Verificar que no exista otro rol con el mismo nombre
-        var rolWithName = await _rolRepository.GetByNombreAsync(rol.Nombre);
-        if (rolWithName != null && rolWithName.IdRol != rol.IdRol)
+        var rolWithName = await _rolRepository.GetByNombreAsync(rolDto.Nombre);
+        if (rolWithName != null && rolWithName.IdRol != rolDto.IdRol)
         {
-            throw new Exception($"Ya existe otro rol con el nombre {rol.Nombre}");
+            throw new Exception($"Ya existe otro rol con el nombre {rolDto.Nombre}");
         }
+        
+        // Mapear los cambios a la entidad existente
+        _mapper.Map(rolDto, existingRol);
 
-        await _rolRepository.UpdateAsync(rol);
+        await _rolRepository.UpdateAsync(existingRol);
         await _rolRepository.SaveChangesAsync();
         
         return true;
