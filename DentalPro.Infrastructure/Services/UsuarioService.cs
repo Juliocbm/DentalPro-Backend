@@ -126,12 +126,13 @@ public class UsuarioService : IUsuarioService
         return result;
     }
 
-    public async Task<bool> UpdateAsync(Usuario usuario)
+    public async Task UpdateAsync(Usuario usuario)
     {
+        //Posiblemente innecesario, la posibilidad de condicion de carrera es bajo
         var existingUser = await _usuarioRepository.GetByIdAsync(usuario.IdUsuario);
         if (existingUser == null)
         {
-            return false;
+            throw new NotFoundException("Usuario", usuario.IdUsuario);
         }
 
         // Validar que el correo no exista para otro usuario
@@ -146,8 +147,6 @@ public class UsuarioService : IUsuarioService
         
         await _usuarioRepository.UpdateAsync(usuario);
         await _usuarioRepository.SaveChangesAsync();
-        
-        return true;
     }
 
     public async Task<bool> DeleteAsync(Guid id)

@@ -181,11 +181,7 @@ public class UsuariosController : ControllerBase
             usuario.Activo = request.Activo;
             
             // Actualizar el usuario
-            var result = await _usuarioService.UpdateAsync(usuario);
-            if (!result)
-            {
-                return BadRequest("No se pudo actualizar el usuario");
-            }
+            await _usuarioService.UpdateAsync(usuario);
 
             // Actualizar roles si es necesario
             // Primero obtenemos los roles actuales como IDs
@@ -214,7 +210,7 @@ public class UsuariosController : ControllerBase
             var updatedUsuario = await _usuarioService.GetByIdAsync(id);
             if (updatedUsuario == null)
             {
-                return NotFound();
+                throw new NotFoundException("Usuario", id);
             }
         
             // Convertir a DTO

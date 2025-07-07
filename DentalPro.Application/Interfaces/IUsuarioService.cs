@@ -12,7 +12,7 @@ public interface IUsuarioService
     
     // Nuevo método que usa IDs de roles en lugar de nombres
     Task<Usuario> CreateAsyncWithRolIds(Usuario usuario, string password, List<Guid> rolIds);
-    Task<bool> UpdateAsync(Usuario usuario);
+    Task UpdateAsync(Usuario usuario);
     Task<bool> DeleteAsync(Guid id);
     Task<bool> ChangePasswordAsync(Guid id, string currentPassword, string newPassword);
     Task<bool> AsignarRolAsync(Guid idUsuario, string nombreRol);
