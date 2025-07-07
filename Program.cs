@@ -7,12 +7,36 @@ using Microsoft.AspNetCore.Authorization;
 using DentalPro.Api.Infrastructure.Authorization;
 using DentalPro.Api.Infrastructure.Extensions;
 using DentalPro.Api.Infrastructure.Middlewares;
+using DentalPro.Application.Common.Validators;
+using DentalPro.Application.Common.Validators.Auth;
+using DentalPro.Application.Common.Validators.Usuarios;
+using DentalPro.Application.Common.Validators.Roles;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    // Registrar nuestro filtro de validación personalizado con Order = -9999 para que se ejecute antes
+    options.Filters.Add<ValidationFilter>(-9999);
+})
+.AddFluentValidation(fv => 
+{
+    // Registrar todos los validadores de forma automática
+    fv.RegisterValidatorsFromAssemblyContaining<LoginRequestValidator>();
+    
+    // Desactivar la validación automática de DataAnnotations
+    fv.DisableDataAnnotationsValidation = true;
+    
+    // No mostrar errores de validación en inglés (opcional)
+    ValidatorOptions.Global.LanguageManager.Culture = new System.Globalization.CultureInfo("es");
+    
+    // Configurar FluentValidation para que no lance excepciones automáticamente
+    fv.AutomaticValidationEnabled = true;
+});
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -87,6 +111,12 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 // Registrar AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+// Registrar validadores específicos explícitamente
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.LoginRequest>, LoginRequestValidator>();
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.RegisterRequest>, RegisterRequestValidator>();
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Usuario.UsuarioDto>, UsuarioDtoValidator>();
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Rol.RolDto>, RolDtoValidator>();
 
 var app = builder.Build();
 

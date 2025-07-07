@@ -56,14 +56,19 @@ public class ExceptionHandlingMiddleware
             // Casos específicos primero (orden importante: de más específico a más general)
             case ValidationException validationEx:
                 errorResponse.StatusCode = (int)HttpStatusCode.BadRequest;
-                errorResponse.ErrorCode = ErrorCodes.ValidationFailed;
-                errorResponse.Message = "Error de validación";
+                errorResponse.ErrorCode = validationEx.ErrorCode ?? ErrorCodes.ValidationFailed;
+                errorResponse.Message = validationEx.Message;
                 errorResponse.Error = "Validation Failed"; // Para compatibilidad con Angular
                 errorResponse.ValidationErrors = validationEx.ValidationErrors;
                 
-                // Convertir errores de validación al formato de Angular FormGroup
-                if (validationEx.ValidationErrors?.Any() == true)
+                // Usar directamente el FormErrors de ValidationException
+                if (validationEx.FormErrors?.Any() == true)
                 {
+                    errorResponse.FormErrors = validationEx.FormErrors;
+                }
+                else if (validationEx.ValidationErrors?.Any() == true)
+                {
+                    // Mantener compatibilidad hacia atrás si no hay FormErrors
                     var errorsGroupedByProperty = validationEx.ValidationErrors
                         .GroupBy(e => e.Property)
                         .ToDictionary(
