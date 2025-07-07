@@ -1,5 +1,7 @@
 using AutoMapper;
 using DentalPro.Application.DTOs.Rol;
+using DentalPro.Application.Common.Constants;
+using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.Interfaces;
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Domain.Entities;
@@ -38,7 +40,7 @@ public class RolService : IRolService
         var existingRol = await _rolRepository.GetByNombreAsync(rolDto.Nombre);
         if (existingRol != null)
         {
-            throw new Exception($"Ya existe un rol con el nombre {rolDto.Nombre}");
+            throw new BadRequestException($"Ya existe un rol con el nombre {rolDto.Nombre}", ErrorCodes.DuplicateResourceName);
         }
 
         // Generar ID si no existe
@@ -69,7 +71,7 @@ public class RolService : IRolService
         var rolWithName = await _rolRepository.GetByNombreAsync(rolDto.Nombre);
         if (rolWithName != null && rolWithName.IdRol != rolDto.IdRol)
         {
-            throw new Exception($"Ya existe otro rol con el nombre {rolDto.Nombre}");
+            throw new BadRequestException($"Ya existe otro rol con el nombre {rolDto.Nombre}", ErrorCodes.DuplicateResourceName);
         }
         
         // Mapear los cambios a la entidad existente

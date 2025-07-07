@@ -1,3 +1,5 @@
+using DentalPro.Application.Common.Constants;
+using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.Interfaces;
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Domain.Entities;
@@ -36,7 +38,7 @@ public class UsuarioService : IUsuarioService
         var existingUser = await _usuarioRepository.GetByEmailAsync(usuario.Correo);
         if (existingUser != null)
         {
-            throw new Exception("El correo electrónico ya está registrado");
+            throw new BadRequestException("El correo electrónico ya está registrado", ErrorCodes.DuplicateEmail);
         }
 
         // Hash de la contraseña
@@ -82,7 +84,7 @@ public class UsuarioService : IUsuarioService
         var emailUser = await _usuarioRepository.GetByEmailAsync(usuario.Correo);
         if (emailUser != null && emailUser.IdUsuario != usuario.IdUsuario)
         {
-            throw new Exception("El correo electrónico ya está en uso por otro usuario");
+            throw new BadRequestException("El correo electrónico ya está en uso por otro usuario", ErrorCodes.DuplicateEmail);
         }
 
         // Mantener el mismo hash de contraseña
@@ -119,7 +121,7 @@ public class UsuarioService : IUsuarioService
         // Validar contraseña actual
         if (!BCrypt.Net.BCrypt.Verify(currentPassword, usuario.PasswordHash))
         {
-            throw new Exception("La contraseña actual es incorrecta");
+            throw new BadRequestException("La contraseña actual es incorrecta", ErrorCodes.InvalidCredentials);
         }
 
         // Actualizar contraseña

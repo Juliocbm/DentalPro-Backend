@@ -1,3 +1,5 @@
+using DentalPro.Application.Common.Constants;
+using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.DTOs.Auth;
 using DentalPro.Application.Interfaces;
 using DentalPro.Application.Interfaces.IRepositories;
@@ -38,7 +40,7 @@ public class AuthService : IAuthService
             .FirstOrDefaultAsync(u => u.Correo == request.Correo && u.Activo);
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            throw new Exception("Credenciales inválidas");
+            throw new BadRequestException(ErrorMessages.InvalidCredentials, ErrorCodes.InvalidCredentials);
 
         var claims = new List<Claim>
         {
@@ -77,21 +79,21 @@ public class AuthService : IAuthService
     {
         if (request.Password != request.ConfirmPassword)
         {
-            throw new Exception("Las contraseñas no coinciden");
+            throw new BadRequestException("Las contraseñas no coinciden", ErrorCodes.ValidationFailed);
         }
 
         // Verificar que el email no exista ya
         var existingUser = await _usuarioRepository.GetByEmailAsync(request.Correo);
         if (existingUser != null)
         {
-            throw new Exception("El correo ya está registrado");
+            throw new BadRequestException("El correo ya está registrado", ErrorCodes.DuplicateEmail);
         }
 
         // Verificar que el consultorio exista
         var consultorio = await _context.Consultorios.FindAsync(request.IdConsultorio);
         if (consultorio == null)
         {
-            throw new Exception("El consultorio especificado no existe");
+            throw new NotFoundException("Consultorio", request.IdConsultorio);
         }
 
         // Crear el nuevo usuario

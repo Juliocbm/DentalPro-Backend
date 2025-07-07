@@ -9,4 +9,9 @@ public class BadRequestException : ApplicationException
         : base(message, "BAD_REQUEST")
     {
     }
+
+    public BadRequestException(string message, string errorCode)
+        : base(message, errorCode)
+    {
+    }
 }

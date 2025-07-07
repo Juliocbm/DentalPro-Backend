@@ -30,6 +30,8 @@ public static class ErrorCodes
     public const string ResourceNotFound = "ERR-5000";
     public const string ResourceAlreadyExists = "ERR-5001";
     public const string ResourceConflict = "ERR-5002";
+    public const string DuplicateResourceName = "ERR-5003";
+    public const string DuplicateEmail = "ERR-5004";
     
     // Errores de base de datos - Rango 6000
     public const string DatabaseError = "ERR-6000";
