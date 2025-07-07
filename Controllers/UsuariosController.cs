@@ -8,7 +8,7 @@ namespace DentalPro.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = "RequireAuthenticatedUser")]
 public class UsuariosController : ControllerBase
 {
     private readonly IUsuarioService _usuarioService;
@@ -19,7 +19,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "Administrador")]
+    [Authorize(Policy = "RequireAdminRole")]
     public async Task<ActionResult<IEnumerable<UsuarioDto>>> GetUsuarios()
     {
         // Obtener el ID del consultorio del token JWT
@@ -79,7 +79,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Administrador")]
+    [Authorize(Policy = "RequireAdminRole")]
     public async Task<ActionResult<UsuarioDto>> CreateUsuario([FromBody] CreateUsuarioRequest request)
     {
         try
@@ -205,7 +205,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Administrador")]
+    [Authorize(Policy = "RequireAdminRole")]
     public async Task<IActionResult> DeleteUsuario(Guid id)
     {
         try

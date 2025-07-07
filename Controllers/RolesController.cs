@@ -8,7 +8,7 @@ namespace DentalPro.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Administrador")]
+[Authorize(Policy = "RequireAdminRole")]
 public class RolesController : ControllerBase
 {
     private readonly IRolService _rolService;

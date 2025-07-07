@@ -3,6 +3,8 @@ using System.Text;
 using DentalPro.Infrastructure;
 using DentalPro.Application.Common.Mappings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using DentalPro.Api.Infrastructure.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,7 +60,26 @@ builder.Services.AddAuthentication("Bearer")
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    // Política para administradores
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Administrador"));
+    
+    // Política para doctores
+    options.AddPolicy("RequireDoctorRole", policy => policy.RequireRole("Doctor"));
+    
+    // Política para asistentes
+    options.AddPolicy("RequireAssistantRole", policy => policy.RequireRole("Asistente"));
+    
+    // Política para cualquier usuario autenticado
+    options.AddPolicy("RequireAuthenticatedUser", policy => policy.RequireAuthenticatedUser());
+    
+    // Política para validar acceso a consultorio
+    options.AddPolicy("ConsultorioAccess", policy => policy.Requirements.Add(new ConsultorioAccessRequirement()));
+});
+
+// Registrar los manejadores de autorización personalizados
+builder.Services.AddSingleton<IAuthorizationHandler, ConsultorioAccessHandler>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
