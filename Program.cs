@@ -5,6 +5,8 @@ using DentalPro.Application.Common.Mappings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using DentalPro.Api.Infrastructure.Authorization;
+using DentalPro.Api.Infrastructure.Extensions;
+using DentalPro.Api.Infrastructure.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -96,6 +98,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Registrar el middleware de manejo global de excepciones
+app.UseGlobalExceptionHandler();
 
 app.UseAuthentication();
 app.UseAuthorization();

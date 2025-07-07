@@ -1,3 +1,5 @@
+using DentalPro.Application.Common.Constants;
+using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.DTOs.Usuario;
 using DentalPro.Application.Interfaces;
 using DentalPro.Domain.Entities;
@@ -52,14 +54,14 @@ public class UsuariosController : ControllerBase
         var usuario = await _usuarioService.GetByIdAsync(id);
         if (usuario == null)
         {
-            return NotFound();
+            throw new NotFoundException("Usuario", id);
         }
 
         // Verificar que el usuario pertenezca al mismo consultorio que el usuario autenticado
         var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
         if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuario.IdConsultorio != idConsultorio)
         {
-            return Forbid();
+            throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
         }
 
         // Convertir a DTO
@@ -82,57 +84,49 @@ public class UsuariosController : ControllerBase
     [Authorize(Policy = "RequireAdminRole")]
     public async Task<ActionResult<UsuarioDto>> CreateUsuario([FromBody] CreateUsuarioRequest request)
     {
-        try
+        if (request.Password != request.ConfirmPassword)
         {
-            if (request.Password != request.ConfirmPassword)
-            {
-                return BadRequest("Las contraseñas no coinciden");
-            }
-
-            // Obtener el ID del consultorio del token JWT
-            var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
-            if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio))
-            {
-                return BadRequest("ID de consultorio no válido");
-            }
-
-            // Validar que el consultorio del request coincida con el del usuario autenticado
-            if (request.IdConsultorio != idConsultorio)
-            {
-                return BadRequest("No puede crear usuarios para otros consultorios");
-            }
-
-            // Crear el usuario
-            var usuario = new Usuario
-            {
-                IdUsuario = Guid.NewGuid(),
-                Nombre = request.Nombre,
-                Correo = request.Correo,
-                Activo = true,
-                IdConsultorio = request.IdConsultorio
-            };
-
-            var createdUsuario = await _usuarioService.CreateAsync(usuario, request.Password, request.Roles);
-
-            // Convertir a DTO para la respuesta
-            var usuarioDto = new UsuarioDto
-            {
-                IdUsuario = createdUsuario.IdUsuario,
-                Nombre = createdUsuario.Nombre,
-                Correo = createdUsuario.Correo,
-                Activo = createdUsuario.Activo,
-                IdConsultorio = createdUsuario.IdConsultorio,
-                Roles = createdUsuario.Roles.Select(r => r.Rol?.Nombre ?? string.Empty)
-                                     .Where(r => !string.IsNullOrEmpty(r))
-                                     .ToList()
-            };
-
-            return CreatedAtAction(nameof(GetUsuario), new { id = usuarioDto.IdUsuario }, usuarioDto);
+            throw new BadRequestException(ErrorMessages.PasswordMismatch);
         }
-        catch (Exception ex)
+
+        // Obtener el ID del consultorio del token JWT
+        var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
+        if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio))
         {
-            return BadRequest(ex.Message);
+            throw new BadRequestException("ID de consultorio no válido");
         }
+
+        // Validar que el consultorio del request coincida con el del usuario autenticado
+        if (request.IdConsultorio != idConsultorio)
+        {
+            throw new ForbiddenAccessException("No puede crear usuarios para otros consultorios");
+        }
+
+        // Crear el usuario
+        var usuario = new Usuario
+        {
+            IdUsuario = Guid.NewGuid(),
+            Nombre = request.Nombre,
+            Correo = request.Correo,
+            Activo = true,
+            IdConsultorio = request.IdConsultorio
+        };
+
+        var createdUsuario = await _usuarioService.CreateAsync(usuario, request.Password, request.Roles);
+
+        var usuarioDto = new UsuarioDto
+        {
+            IdUsuario = createdUsuario.IdUsuario,
+            Nombre = createdUsuario.Nombre,
+            Correo = createdUsuario.Correo,
+            Activo = createdUsuario.Activo,
+            IdConsultorio = createdUsuario.IdConsultorio,
+            Roles = createdUsuario.Roles.Select(r => r.Rol?.Nombre ?? string.Empty)
+                                  .Where(r => !string.IsNullOrEmpty(r))
+                                  .ToList()
+        };
+
+        return CreatedAtAction(nameof(GetUsuario), new { id = usuarioDto.IdUsuario }, usuarioDto);
     }
 
     [HttpPut("{id}")]
@@ -208,80 +202,66 @@ public class UsuariosController : ControllerBase
     [Authorize(Policy = "RequireAdminRole")]
     public async Task<IActionResult> DeleteUsuario(Guid id)
     {
-        try
+        // Verificar que el usuario existe
+        var usuario = await _usuarioService.GetByIdAsync(id);
+        if (usuario == null)
         {
-            // Verificar que el usuario existe
-            var usuario = await _usuarioService.GetByIdAsync(id);
-            if (usuario == null)
-            {
-                return NotFound();
-            }
-
-            // Verificar que pertenece al mismo consultorio que el usuario autenticado
-            var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
-            if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuario.IdConsultorio != idConsultorio)
-            {
-                return Forbid();
-            }
-
-            // Eliminar el usuario
-            var result = await _usuarioService.DeleteAsync(id);
-            if (!result)
-            {
-                return BadRequest("No se pudo eliminar el usuario");
-            }
-
-            return NoContent();
+            throw new NotFoundException("Usuario", id);
         }
-        catch (Exception ex)
+
+        // Verificar que pertenece al mismo consultorio que el usuario autenticado
+        var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
+        if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuario.IdConsultorio != idConsultorio)
         {
-            return BadRequest(ex.Message);
+            throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
         }
+
+        // Eliminar el usuario
+        var result = await _usuarioService.DeleteAsync(id);
+        if (!result)
+        {
+            throw new BadRequestException("No se pudo eliminar el usuario");
+        }
+
+        return NoContent();
     }
 
     [HttpPost("{id}/cambiar-password")]
     public async Task<IActionResult> ChangePassword(Guid id, [FromBody] ChangePasswordRequest request)
     {
-        try
+        // Verificar que el ID coincide
+        if (id != request.IdUsuario)
         {
-            // Verificar que el ID coincide
-            if (id != request.IdUsuario)
-            {
-                return BadRequest("El ID de la URL no coincide con el ID en el cuerpo de la solicitud");
-            }
-
-            // Verificar que el usuario existe
-            var usuario = await _usuarioService.GetByIdAsync(id);
-            if (usuario == null)
-            {
-                return NotFound();
-            }
-
-            // Verificar que pertenece al mismo consultorio que el usuario autenticado
-            var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
-            if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuario.IdConsultorio != idConsultorio)
-            {
-                return Forbid();
-            }
-
-            // Verificar que la nueva contraseña y la confirmación coinciden
-            if (request.NewPassword != request.ConfirmNewPassword)
-            {
-                return BadRequest("La nueva contraseña y su confirmación no coinciden");
-            }
-
-            // Cambiar la contraseña
-            var result = await _usuarioService.ChangePasswordAsync(id, request.CurrentPassword, request.NewPassword);
-            if (!result)
-            {
-                return BadRequest("No se pudo cambiar la contraseña");
-            }
-
-            return NoContent();
+            throw new BadRequestException("El ID de la URL no coincide con el ID en el cuerpo de la solicitud");
         }
-        catch (Exception ex)
+
+        // Verificar que el usuario existe
+        var usuario = await _usuarioService.GetByIdAsync(id);
+        if (usuario == null)
         {
-            return BadRequest(ex.Message);
+            throw new NotFoundException("Usuario", id);
         }
+
+        // Verificar que pertenece al mismo consultorio que el usuario autenticado
+        var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
+        if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuario.IdConsultorio != idConsultorio)
+        {
+            throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
+        }
+
+        // Verificar que la nueva contraseña y la confirmación coinciden
+        if (request.NewPassword != request.ConfirmNewPassword)
+        {
+            throw new BadRequestException(ErrorMessages.PasswordMismatch);
+        }
+
+        // Cambiar la contraseña
+        var result = await _usuarioService.ChangePasswordAsync(id, request.CurrentPassword, request.NewPassword);
+        if (!result)
+        {
+            throw new BadRequestException("No se pudo cambiar la contraseña");
+        }
+
+        return NoContent();
     }
 }

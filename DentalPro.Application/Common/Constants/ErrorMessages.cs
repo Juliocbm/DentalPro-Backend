@@ -1,0 +1,33 @@
+namespace DentalPro.Application.Common.Constants;
+
+/// <summary>
+/// Catálogo centralizado de mensajes de error
+/// </summary>
+public static class ErrorMessages
+{
+    // Mensajes generales
+    public const string DefaultError = "Ha ocurrido un error inesperado.";
+    public const string ServiceUnavailable = "El servicio no está disponible en este momento.";
+    
+    // Mensajes de autenticación
+    public const string InvalidCredentials = "Credenciales inválidas.";
+    public const string UserNotActive = "El usuario no está activo.";
+    public const string UserLocked = "La cuenta de usuario está bloqueada.";
+    public const string TokenExpired = "El token ha expirado.";
+    
+    // Mensajes de autorización
+    public const string UnauthorizedAccess = "No está autorizado para realizar esta operación.";
+    public const string ForbiddenResource = "No tiene permisos para acceder a este recurso.";
+    public const string DifferentConsultorio = "No tiene permisos para acceder a recursos de otro consultorio.";
+    
+    // Mensajes de recursos
+    public const string ResourceNotFound = "El recurso solicitado no existe.";
+    public const string ResourceAlreadyExists = "El recurso ya existe.";
+    
+    // Mensajes de validación
+    public const string InvalidDataFormat = "El formato de los datos es inválido.";
+    public const string RequiredField = "Este campo es requerido.";
+    public const string InvalidEmailFormat = "El formato del correo electrónico es inválido.";
+    public const string PasswordMismatch = "Las contraseñas no coinciden.";
+    public const string InvalidPasswordFormat = "La contraseña debe tener al menos 8 caracteres, incluir una letra mayúscula, una minúscula y un número.";
+}
