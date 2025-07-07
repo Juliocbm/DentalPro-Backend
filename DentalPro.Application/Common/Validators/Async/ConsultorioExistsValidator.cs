@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using DentalPro.Application.Interfaces;
+using DentalPro.Application.Interfaces.IServices;
 using FluentValidation;
 using FluentValidation.Validators;
 

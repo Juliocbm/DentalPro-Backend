@@ -13,6 +13,7 @@ using DentalPro.Application.Common.Validators.Usuarios;
 using DentalPro.Application.Common.Validators.Roles;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using DentalPro.Application.Interfaces.IServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -120,6 +121,14 @@ builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.LoginReque
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.RegisterRequest>, RegisterRequestValidator>();
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Usuario.UsuarioDto>, UsuarioDtoValidator>();
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Rol.RolDto>, RolDtoValidator>();
+
+// Registrar validadores de pacientes
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Paciente.PacienteCreateDto>, DentalPro.Application.Common.Validators.Pacientes.PacienteCreateDtoValidator>();
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Paciente.PacienteUpdateDto>, DentalPro.Application.Common.Validators.Pacientes.PacienteUpdateDtoValidator>();
+
+// Registrar servicios y repositorios de pacientes
+builder.Services.AddScoped<DentalPro.Application.Interfaces.IRepositories.IPacienteRepository, DentalPro.Infrastructure.Persistence.Repositories.PacienteRepository>();
+builder.Services.AddScoped<IPacienteService, DentalPro.Infrastructure.Services.PacienteService>();
 
 var app = builder.Build();
 

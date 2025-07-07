@@ -1,6 +1,6 @@
 using DentalPro.Domain.Entities;
 
-namespace DentalPro.Application.Interfaces;
+namespace DentalPro.Application.Interfaces.IServices;
 
 public interface IUsuarioService
 {

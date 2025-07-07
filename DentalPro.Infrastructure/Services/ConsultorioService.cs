@@ -1,6 +1,6 @@
 using AutoMapper;
-using DentalPro.Application.Interfaces;
 using DentalPro.Application.Interfaces.IRepositories;
+using DentalPro.Application.Interfaces.IServices;
 using DentalPro.Domain.Entities;
 
 namespace DentalPro.Infrastructure.Services;

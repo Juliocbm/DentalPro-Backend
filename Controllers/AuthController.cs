@@ -1,7 +1,7 @@
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.DTOs.Auth;
-using DentalPro.Application.Interfaces;
+using DentalPro.Application.Interfaces.IServices;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DentalPro.Api.Controllers;

@@ -1,6 +1,6 @@
 using DentalPro.Application.DTOs.Auth;
 
-namespace DentalPro.Application.Interfaces;
+namespace DentalPro.Application.Interfaces.IServices;
 
 public interface IAuthService
 {

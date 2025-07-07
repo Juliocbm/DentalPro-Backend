@@ -1,9 +1,9 @@
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
-using DentalPro.Application.Interfaces;
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Domain.Entities;
 using BCrypt.Net;
+using DentalPro.Application.Interfaces.IServices;
 namespace DentalPro.Infrastructure.Services;
 
 public class UsuarioService : IUsuarioService

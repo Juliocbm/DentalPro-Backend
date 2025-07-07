@@ -2,9 +2,9 @@ using AutoMapper;
 using DentalPro.Application.DTOs.Rol;
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
-using DentalPro.Application.Interfaces;
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Domain.Entities;
+using DentalPro.Application.Interfaces.IServices;
 
 namespace DentalPro.Infrastructure.Services;
 

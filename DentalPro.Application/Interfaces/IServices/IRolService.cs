@@ -1,7 +1,7 @@
 using DentalPro.Application.DTOs.Rol;
 using DentalPro.Domain.Entities;
 
-namespace DentalPro.Application.Interfaces;
+namespace DentalPro.Application.Interfaces.IServices;
 
 /// <summary>
 /// Servicio para la gestión de roles

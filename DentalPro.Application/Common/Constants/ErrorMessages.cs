@@ -30,4 +30,11 @@ public static class ErrorMessages
     public const string InvalidEmailFormat = "El formato del correo electrónico es inválido.";
     public const string PasswordMismatch = "Las contraseñas no coinciden.";
     public const string InvalidPasswordFormat = "La contraseña debe tener al menos 8 caracteres, incluir una letra mayúscula, una minúscula y un número.";
+    
+    // Mensajes específicos para pacientes
+    public const string ConsultorioRequired = "Se requiere un consultorio válido.";
+    public const string PatientEmailInUse = "El correo electrónico ya está registrado para otro paciente.";
+    public const string PatientHasActiveAppointments = "No se puede eliminar el paciente porque tiene citas programadas.";
+    public const string PatientHasPendingPayments = "No se puede eliminar el paciente porque tiene pagos pendientes.";
+    public const string InvalidDateOfBirth = "La fecha de nacimiento no es válida.";
 }

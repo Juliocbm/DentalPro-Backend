@@ -1,7 +1,7 @@
 using FluentValidation;
 using DentalPro.Application.DTOs.Usuario;
-using DentalPro.Application.Interfaces;
 using DentalPro.Application.Common.Validators.Async;
+using DentalPro.Application.Interfaces.IServices;
 
 namespace DentalPro.Application.Common.Validators.Usuarios;
 

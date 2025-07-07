@@ -1,5 +1,5 @@
-using DentalPro.Application.Interfaces;
 using DentalPro.Application.Interfaces.IRepositories;
+using DentalPro.Application.Interfaces.IServices;
 using DentalPro.Infrastructure.Persistence;
 using DentalPro.Infrastructure.Persistence.Repositories;
 using DentalPro.Infrastructure.Services;
