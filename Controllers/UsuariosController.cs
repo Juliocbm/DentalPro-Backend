@@ -36,7 +36,7 @@ public class UsuariosController : ControllerBase
         var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
         if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio))
         {
-            return BadRequest("ID de consultorio no válido");
+            throw new BadRequestException("ID de consultorio no válido", ErrorCodes.InvalidConsultorio);
         }
 
         var usuarios = await _usuarioService.GetAllByConsultorioAsync(idConsultorio);
@@ -154,28 +154,26 @@ public class UsuariosController : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> UpdateUsuario(Guid id, [FromBody] UpdateUsuarioRequest request)
+    public async Task<ActionResult<UsuarioDto>> UpdateUsuario(Guid id, [FromBody] UpdateUsuarioRequest request)
     {
-        try
+        if (id != request.IdUsuario)
         {
-            if (id != request.IdUsuario)
-            {
-                return BadRequest("El ID de la URL no coincide con el ID en el cuerpo de la solicitud");
-            }
+            throw new BadRequestException("El ID de la URL no coincide con el ID en el cuerpo de la solicitud", ErrorCodes.ValidationFailed);
+        }
 
-            // Obtener el usuario actual
-            var usuario = await _usuarioService.GetByIdAsync(id);
-            if (usuario == null)
-            {
-                return NotFound();
-            }
+        // Obtener el usuario actual
+        var usuario = await _usuarioService.GetByIdAsync(id);
+        if (usuario == null)
+        {
+            throw new NotFoundException("Usuario", id);
+        }
 
-            // Verificar que pertenezca al mismo consultorio que el usuario autenticado
-            var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
-            if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuario.IdConsultorio != idConsultorio)
-            {
-                return Forbid();
-            }
+        // Verificar que pertenezca al mismo consultorio que el usuario autenticado
+        var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
+        if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuario.IdConsultorio != idConsultorio)
+        {
+            throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
+        }
 
             // Actualizar propiedades
             usuario.Nombre = request.Nombre;
@@ -238,11 +236,6 @@ public class UsuariosController : ControllerBase
             };
         
             return Ok(usuarioDto);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
     }
 
     [HttpDelete("{id}")]
