@@ -27,16 +27,16 @@ public class UpdateUsuarioRequestValidator : AbstractValidator<UpdateUsuarioRequ
 
         // Validación para Activo es opcional ya que es un booleano con valor predeterminado
 
-        RuleFor(x => x.Roles)
+        RuleFor(x => x.RolIds)
             .NotNull().WithMessage("La lista de roles no puede ser nula")
             .Must(roles => roles.Count > 0).WithMessage("Debe asignar al menos un rol al usuario")
-            .When(x => x.Roles != null);
+            .When(x => x.RolIds != null);
 
-        RuleForEach(x => x.Roles)
-            .NotEmpty().WithMessage("El nombre del rol no puede estar vacío")
-            .When(x => x.Roles != null)
-            // Validación asincrónica: Verificar que cada rol exista en la base de datos
+        RuleForEach(x => x.RolIds)
+            .NotEqual(Guid.Empty).WithMessage("El ID del rol no puede estar vacío")
+            .When(x => x.RolIds != null)
+            // Validación asincrónica: Verificar que cada rol exista en la base de datos por ID
             .MustExistInDatabase(rolService)
-                .WithMessage("El rol '{PropertyValue}' no existe en el sistema");
+                .WithMessage("El rol con ID '{PropertyValue}' no existe en el sistema");
     }
 }

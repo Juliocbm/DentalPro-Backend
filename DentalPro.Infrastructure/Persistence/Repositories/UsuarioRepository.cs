@@ -85,4 +85,55 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
         await _context.SaveChangesAsync();
         return true;
     }
+    
+    public async Task<bool> AsignarRolPorIdAsync(Guid idUsuario, Guid idRol)
+    {
+        var usuario = await _dbSet
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.IdUsuario == idUsuario);
+
+        if (usuario == null)
+            return false;
+            
+        // Verificar si el rol existe
+        var rolRepository = new RolRepository(_context);
+        var rol = await rolRepository.GetByIdAsync(idRol);
+
+        if (rol == null)
+            return false;
+
+        // Verificar si el usuario ya tiene el rol
+        if (usuario.Roles.Any(r => r.IdRol == idRol))
+            return true; // El usuario ya tiene este rol
+
+        // Añadir el nuevo rol al usuario
+        usuario.Roles.Add(new UsuarioRol
+        {
+            IdUsuario = usuario.IdUsuario,
+            IdRol = idRol
+        });
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+    
+    public async Task<bool> RemoverRolPorIdAsync(Guid idUsuario, Guid idRol)
+    {
+        var usuario = await _dbSet
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.IdUsuario == idUsuario);
+
+        if (usuario == null)
+            return false;
+
+        var rolUsuario = usuario.Roles
+            .FirstOrDefault(r => r.IdRol == idRol);
+
+        if (rolUsuario == null)
+            return true; // El usuario no tiene este rol
+
+        usuario.Roles.Remove(rolUsuario);
+        await _context.SaveChangesAsync();
+        return true;
+    }
 }

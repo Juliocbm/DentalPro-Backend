@@ -23,5 +23,6 @@ public class CreateUsuarioRequest
     [Required(ErrorMessage = "El ID del consultorio es requerido")]
     public Guid IdConsultorio { get; set; }
 
-    public List<string> Roles { get; set; } = new();
+    // Usar IDs de roles en lugar de nombres para mejorar consistencia y rendimiento
+    public List<Guid> RolIds { get; set; } = new();
 }

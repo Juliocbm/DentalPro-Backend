@@ -74,7 +74,8 @@ public class UsuariosController : ControllerBase
             IdConsultorio = usuario.IdConsultorio,
             Roles = usuario.Roles.Select(r => r.Rol?.Nombre ?? string.Empty)
                              .Where(r => !string.IsNullOrEmpty(r))
-                             .ToList()
+                             .ToList(),
+            RolIds = usuario.Roles.Select(r => r.IdRol).ToList()
         };
         
         return Ok(usuarioDto);
@@ -112,7 +113,7 @@ public class UsuariosController : ControllerBase
             IdConsultorio = request.IdConsultorio
         };
 
-        var createdUsuario = await _usuarioService.CreateAsync(usuario, request.Password, request.Roles);
+        var createdUsuario = await _usuarioService.CreateAsyncWithRolIds(usuario, request.Password, request.RolIds);
 
         var usuarioDto = new UsuarioDto
         {
@@ -122,8 +123,10 @@ public class UsuariosController : ControllerBase
             Activo = createdUsuario.Activo,
             IdConsultorio = createdUsuario.IdConsultorio,
             Roles = createdUsuario.Roles.Select(r => r.Rol?.Nombre ?? string.Empty)
-                                  .Where(r => !string.IsNullOrEmpty(r))
-                                  .ToList()
+                              .Where(r => !string.IsNullOrEmpty(r))
+                              .ToList(),
+            RolIds = createdUsuario.Roles.Select(r => r.IdRol)
+                               .ToList()
         };
 
         return CreatedAtAction(nameof(GetUsuario), new { id = usuarioDto.IdUsuario }, usuarioDto);
@@ -167,27 +170,26 @@ public class UsuariosController : ControllerBase
             }
 
             // Actualizar roles si es necesario
-            // Primero obtenemos los roles actuales
-            var currentRoles = usuario.Roles.Select(r => r.Rol?.Nombre ?? string.Empty)
-                                           .Where(r => !string.IsNullOrEmpty(r))
-                                           .ToList();
+            // Primero obtenemos los roles actuales como IDs
+            var currentRolIds = usuario.Roles.Select(r => r.IdRol)
+                                            .ToList();
 
-            // Roles a añadir (están en request.Roles pero no en currentRoles)
-            var rolesToAdd = request.Roles.Except(currentRoles).ToList();
+            // Roles a añadir (están en request.RolIds pero no en currentRolIds)
+            var rolesToAdd = request.RolIds.Except(currentRolIds).ToList();
             
-            // Roles a eliminar (están en currentRoles pero no en request.Roles)
-            var rolesToRemove = currentRoles.Except(request.Roles).ToList();
+            // Roles a eliminar (están en currentRolIds pero no en request.RolIds)
+            var rolesToRemove = currentRolIds.Except(request.RolIds).ToList();
 
             // Añadir nuevos roles
-            foreach (var rol in rolesToAdd)
+            foreach (var rolId in rolesToAdd)
             {
-                await _usuarioService.AsignarRolAsync(id, rol);
+                await _usuarioService.AsignarRolPorIdAsync(id, rolId);
             }
 
             // Eliminar roles
-            foreach (var rol in rolesToRemove)
+            foreach (var rolId in rolesToRemove)
             {
-                await _usuarioService.RemoverRolAsync(id, rol);
+                await _usuarioService.RemoverRolPorIdAsync(id, rolId);
             }
 
             return NoContent();

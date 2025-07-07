@@ -17,5 +17,6 @@ public class UpdateUsuarioRequest
     
     public bool Activo { get; set; }
     
-    public List<string> Roles { get; set; } = new();
+    // Usar IDs de roles en lugar de nombres para mejorar consistencia y rendimiento
+    public List<Guid> RolIds { get; set; } = new();
 }

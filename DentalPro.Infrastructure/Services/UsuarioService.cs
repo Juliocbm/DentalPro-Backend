@@ -71,6 +71,60 @@ public class UsuarioService : IUsuarioService
         
         return result;
     }
+    
+    public async Task<Usuario> CreateAsyncWithRolIds(Usuario usuario, string password, List<Guid> rolIds)
+    {
+        // Validar que el correo no exista
+        var existingUser = await _usuarioRepository.GetByEmailAsync(usuario.Correo);
+        if (existingUser != null)
+        {
+            throw new BadRequestException("El correo electrónico ya está registrado", ErrorCodes.DuplicateEmail);
+        }
+
+        // Hash de la contraseña
+        usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
+        // Generar ID si no existe
+        if (usuario.IdUsuario == Guid.Empty)
+        {
+            usuario.IdUsuario = Guid.NewGuid();
+        }
+
+        // Crear usuario
+        var result = await _usuarioRepository.AddAsync(usuario);
+        
+        // IMPORTANTE: Guardar el usuario en la base de datos ANTES de asignar roles
+        await _usuarioRepository.SaveChangesAsync();
+        
+        // Asignar roles por ID
+        if (rolIds != null && rolIds.Any())
+        {
+            foreach (var rolId in rolIds)
+            {
+                await _usuarioRepository.AsignarRolPorIdAsync(usuario.IdUsuario, rolId);
+            }
+        }
+        else
+        {
+            // Buscar el rol "Usuario" para asignarlo por defecto
+            var rolUsuario = await _rolRepository.GetByNombreAsync("Usuario");
+            
+            if (rolUsuario != null)
+            {
+                await _usuarioRepository.AsignarRolPorIdAsync(usuario.IdUsuario, rolUsuario.IdRol);
+            }
+            else
+            {
+                // Si no existe el rol Usuario, usar el método original
+                await _usuarioRepository.AsignarRolAsync(usuario.IdUsuario, "Usuario");
+            }
+        }
+
+        // Guardar los cambios de roles
+        await _usuarioRepository.SaveChangesAsync();
+        
+        return result;
+    }
 
     public async Task<bool> UpdateAsync(Usuario usuario)
     {
@@ -141,5 +195,15 @@ public class UsuarioService : IUsuarioService
     public async Task<bool> RemoverRolAsync(Guid idUsuario, string nombreRol)
     {
         return await _usuarioRepository.RemoverRolAsync(idUsuario, nombreRol);
+    }
+    
+    public async Task<bool> AsignarRolPorIdAsync(Guid idUsuario, Guid idRol)
+    {
+        return await _usuarioRepository.AsignarRolPorIdAsync(idUsuario, idRol);
+    }
+    
+    public async Task<bool> RemoverRolPorIdAsync(Guid idUsuario, Guid idRol)
+    {
+        return await _usuarioRepository.RemoverRolPorIdAsync(idUsuario, idRol);
     }
 }

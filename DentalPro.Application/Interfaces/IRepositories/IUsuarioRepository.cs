@@ -9,4 +9,6 @@ public interface IUsuarioRepository : IGenericRepository<Usuario>
     Task<IEnumerable<string>> GetUserRolesAsync(Guid idUsuario);
     Task<bool> AsignarRolAsync(Guid idUsuario, string rolNombre);
     Task<bool> RemoverRolAsync(Guid idUsuario, string rolNombre);
+    Task<bool> AsignarRolPorIdAsync(Guid idUsuario, Guid idRol);
+    Task<bool> RemoverRolPorIdAsync(Guid idUsuario, Guid idRol);
 }

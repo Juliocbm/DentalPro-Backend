@@ -112,4 +112,20 @@ public class RolService : IRolService
         var rol = await _rolRepository.GetByNombreAsync(nombre);
         return rol != null;
     }
+    
+    /// <summary>
+    /// Verifica si existe un rol con el ID especificado
+    /// </summary>
+    /// <param name="id">ID del rol a verificar</param>
+    /// <returns>True si existe, False en caso contrario</returns>
+    public async Task<bool> ExistsByIdAsync(Guid id)
+    {
+        if (id == Guid.Empty)
+        {
+            return false;
+        }
+        
+        var rol = await _rolRepository.GetByIdAsync(id);
+        return rol != null;
+    }
 }
