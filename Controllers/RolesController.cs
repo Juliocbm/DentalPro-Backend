@@ -1,3 +1,5 @@
+using DentalPro.Application.Common.Constants;
+using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.DTOs.Rol;
 using DentalPro.Application.Interfaces;
 using DentalPro.Domain.Entities;
@@ -38,7 +40,7 @@ public class RolesController : ControllerBase
         var rol = await _rolService.GetByIdAsync(id);
         if (rol == null)
         {
-            return NotFound();
+            throw new NotFoundException("Rol", id);
         }
 
         var rolDto = new RolDto
@@ -53,73 +55,56 @@ public class RolesController : ControllerBase
 
     [HttpPost]
     public async Task<ActionResult<RolDto>> CreateRol([FromBody] RolDto rol)
-    {
-        try
-        {          
-            var createdRol = await _rolService.CreateAsync(rol);
-
-            return CreatedAtAction(nameof(GetRol), new { id = createdRol.IdRol }, createdRol);
-        }
-        catch (Exception ex)
+    {       
+        var createdRol = await _rolService.CreateAsync(rol);
+        if (createdRol == null)
         {
-            return BadRequest(ex.Message);
+            throw new BadRequestException("No se pudo crear el rol");
         }
+
+        return CreatedAtAction(nameof(GetRol), new { id = createdRol.IdRol }, createdRol);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateRol(Guid id, [FromBody] RolDto rolDto)
     {
-        try
+        if (id != rolDto.IdRol)
         {
-            if (id != rolDto.IdRol)
-            {
-                return BadRequest("El ID de la URL no coincide con el ID en el cuerpo de la solicitud");
-            }
-
-            var rol = await _rolService.GetByIdAsync(id);
-            if (rol == null)
-            {
-                return NotFound();
-            }
-
-            rol.Nombre = rolDto.Nombre;
-            
-            var result = await _rolService.UpdateAsync(rolDto);
-            if (!result)
-            {
-                return BadRequest("No se pudo actualizar el rol");
-            }
-
-            return NoContent();
+            throw new BadRequestException("El ID de la URL no coincide con el ID en el cuerpo de la solicitud");
         }
-        catch (Exception ex)
+
+        var rol = await _rolService.GetByIdAsync(id);
+        if (rol == null)
         {
-            return BadRequest(ex.Message);
+            throw new NotFoundException("Rol", id);
         }
+
+        rol.Nombre = rolDto.Nombre;
+        
+        var result = await _rolService.UpdateAsync(rolDto);
+        if (!result)
+        {
+            throw new BadRequestException("No se pudo actualizar el rol");
+        }
+
+        return NoContent();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteRol(Guid id)
     {
-        try
+        var rol = await _rolService.GetByIdAsync(id);
+        if (rol == null)
         {
-            var rol = await _rolService.GetByIdAsync(id);
-            if (rol == null)
-            {
-                return NotFound();
-            }
-
-            var result = await _rolService.DeleteAsync(id);
-            if (!result)
-            {
-                return BadRequest("No se pudo eliminar el rol");
-            }
-
-            return NoContent();
+            throw new NotFoundException("Rol", id);
         }
-        catch (Exception ex)
+
+        var result = await _rolService.DeleteAsync(id);
+        if (!result)
         {
-            return BadRequest(ex.Message);
+            throw new BadRequestException("No se pudo eliminar el rol");
         }
+
+        return NoContent();
     }
 }

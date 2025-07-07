@@ -1,3 +1,5 @@
+using DentalPro.Application.Common.Constants;
+using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.DTOs.Auth;
 using DentalPro.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -18,28 +20,22 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
-        try
+        var result = await _authService.LoginAsync(request);
+        if (result == null)
         {
-            var result = await _authService.LoginAsync(request);
-            return Ok(result);
+            throw new BadRequestException(ErrorMessages.InvalidCredentials);
         }
-        catch (Exception ex)
-        {
-            return Unauthorized(ex.Message);
-        }
+        return Ok(result);
     }
     
     [HttpPost("register")]
     public async Task<ActionResult<RegisterResponse>> Register([FromBody] RegisterRequest request)
     {
-        try
+        var result = await _authService.RegisterAsync(request);
+        if (result == null)
         {
-            var result = await _authService.RegisterAsync(request);
-            return Ok(result);
+            throw new BadRequestException("No se pudo registrar el usuario");
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        return Ok(result);
     }
 }

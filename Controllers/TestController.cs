@@ -1,3 +1,5 @@
+using DentalPro.Application.Common.Constants;
+using DentalPro.Application.Common.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
@@ -32,7 +34,7 @@ public class TestController : ControllerBase
     {
         if (string.IsNullOrEmpty(token))
         {
-            return BadRequest("Token no proporcionado");
+            throw new BadRequestException("Token no proporcionado");
         }
 
         try
@@ -64,9 +66,11 @@ public class TestController : ControllerBase
                 }
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return BadRequest(new { error = "Error al validar el token", details = ex.Message });
+            // En este caso específico mantenemos el try-catch porque es para diagnóstico
+            // pero lanzamos una excepción personalizada en lugar de devolver BadRequest
+            throw new BadRequestException("Error al validar el token");
         }
     }
 }

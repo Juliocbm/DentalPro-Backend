@@ -53,13 +53,7 @@ public class ExceptionHandlingMiddleware
 
         switch (exception)
         {
-            case Application.Common.Exceptions.ApplicationException appEx:
-                errorResponse.StatusCode = (int)HttpStatusCode.BadRequest;
-                errorResponse.ErrorCode = appEx.ErrorCode;
-                errorResponse.Message = appEx.Message;
-                errorResponse.Error = "Bad Request"; // Para compatibilidad con Angular
-                break;
-            
+            // Casos específicos primero (orden importante: de más específico a más general)
             case ValidationException validationEx:
                 errorResponse.StatusCode = (int)HttpStatusCode.BadRequest;
                 errorResponse.ErrorCode = ErrorCodes.ValidationFailed;
@@ -70,7 +64,6 @@ public class ExceptionHandlingMiddleware
                 // Convertir errores de validación al formato de Angular FormGroup
                 if (validationEx.ValidationErrors?.Any() == true)
                 {
-                    var formErrors = new Dictionary<string, string[]>();
                     var errorsGroupedByProperty = validationEx.ValidationErrors
                         .GroupBy(e => e.Property)
                         .ToDictionary(
@@ -102,6 +95,15 @@ public class ExceptionHandlingMiddleware
                 errorResponse.Error = "Bad Request"; // Para compatibilidad con Angular
                 break;
             
+            // Caso base para cualquier ApplicationException que no sea un tipo específico arriba
+            case Application.Common.Exceptions.ApplicationException appEx:
+                errorResponse.StatusCode = (int)HttpStatusCode.BadRequest;
+                errorResponse.ErrorCode = appEx.ErrorCode;
+                errorResponse.Message = appEx.Message;
+                errorResponse.Error = "Bad Request"; // Para compatibilidad con Angular
+                break;
+            
+            // Caso por defecto para cualquier otra excepción no controlada
             default:
                 errorResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
                 errorResponse.ErrorCode = ErrorCodes.GeneralError;
