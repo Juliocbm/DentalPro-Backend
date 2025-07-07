@@ -1,10 +1,18 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
+using DentalPro.Application.DTOs.Rol;
 using DentalPro.Application.DTOs.Usuario;
 using DentalPro.Application.Interfaces;
 using DentalPro.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace DentalPro.Api.Controllers;
 
@@ -40,9 +48,14 @@ public class UsuariosController : ControllerBase
             Correo = u.Correo,
             Activo = u.Activo,
             IdConsultorio = u.IdConsultorio,
-            Roles = u.Roles.Select(r => r.Rol?.Nombre ?? string.Empty)
-                           .Where(r => !string.IsNullOrEmpty(r))
-                           .ToList()
+            Roles = u.Roles
+                .Where(r => r.Rol != null)
+                .Select(r => new RolInfoDto
+                {
+                    Id = r.IdRol,
+                    Nombre = r.Rol!.Nombre
+                })
+                .ToList()
         }).ToList();
         
         return Ok(usuariosDto);
@@ -72,10 +85,14 @@ public class UsuariosController : ControllerBase
             Correo = usuario.Correo,
             Activo = usuario.Activo,
             IdConsultorio = usuario.IdConsultorio,
-            Roles = usuario.Roles.Select(r => r.Rol?.Nombre ?? string.Empty)
-                             .Where(r => !string.IsNullOrEmpty(r))
-                             .ToList(),
-            RolIds = usuario.Roles.Select(r => r.IdRol).ToList()
+            Roles = usuario.Roles
+                .Where(r => r.Rol != null)
+                .Select(r => new RolInfoDto
+                {
+                    Id = r.IdRol,
+                    Nombre = r.Rol!.Nombre
+                })
+                .ToList()
         };
         
         return Ok(usuarioDto);
@@ -122,11 +139,14 @@ public class UsuariosController : ControllerBase
             Correo = createdUsuario.Correo,
             Activo = createdUsuario.Activo,
             IdConsultorio = createdUsuario.IdConsultorio,
-            Roles = createdUsuario.Roles.Select(r => r.Rol?.Nombre ?? string.Empty)
-                              .Where(r => !string.IsNullOrEmpty(r))
-                              .ToList(),
-            RolIds = createdUsuario.Roles.Select(r => r.IdRol)
-                               .ToList()
+            Roles = createdUsuario.Roles
+                .Where(r => r.Rol != null)
+                .Select(r => new RolInfoDto
+                {
+                    Id = r.IdRol,
+                    Nombre = r.Rol!.Nombre
+                })
+                .ToList()
         };
 
         return CreatedAtAction(nameof(GetUsuario), new { id = usuarioDto.IdUsuario }, usuarioDto);
@@ -191,8 +211,33 @@ public class UsuariosController : ControllerBase
             {
                 await _usuarioService.RemoverRolPorIdAsync(id, rolId);
             }
-
-            return NoContent();
+        
+            // Obtener el usuario actualizado para devolverlo en la respuesta
+            var updatedUsuario = await _usuarioService.GetByIdAsync(id);
+            if (updatedUsuario == null)
+            {
+                return NotFound();
+            }
+        
+            // Convertir a DTO
+            var usuarioDto = new UsuarioDto
+            {
+                IdUsuario = updatedUsuario.IdUsuario,
+                Nombre = updatedUsuario.Nombre,
+                Correo = updatedUsuario.Correo,
+                Activo = updatedUsuario.Activo,
+                IdConsultorio = updatedUsuario.IdConsultorio,
+                Roles = updatedUsuario.Roles
+                    .Where(r => r.Rol != null)
+                    .Select(r => new RolInfoDto
+                    {
+                        Id = r.IdRol,
+                        Nombre = r.Rol!.Nombre
+                    })
+                    .ToList()
+            };
+        
+            return Ok(usuarioDto);
         }
         catch (Exception ex)
         {

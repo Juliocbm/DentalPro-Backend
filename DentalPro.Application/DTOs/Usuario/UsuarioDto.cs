@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using DentalPro.Application.DTOs.Rol;
+
 namespace DentalPro.Application.DTOs.Usuario;
 
 public class UsuarioDto
@@ -8,9 +13,30 @@ public class UsuarioDto
     public bool Activo { get; set; }
     public Guid IdConsultorio { get; set; }
     
-    // Para mantener compatibilidad con el frontend existente
-    public List<string> Roles { get; set; } = new();
+    /// <summary>
+    /// Lista de roles con información completa (ID y nombre)
+    /// </summary>
+    public List<RolInfoDto> Roles { get; set; } = new();
     
-    // Nueva propiedad para IDs de roles
-    public List<Guid> RolIds { get; set; } = new();
+    // DEPRECATED: Para mantener compatibilidad con el frontend existente
+    // Será removido en futuras versiones
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("Use Roles property instead")]
+    public List<string> RolesLegacy
+    {
+        get => Roles?.Select(r => r.Nombre).ToList() ?? new List<string>();
+        set {} // Setter vacío para deserialización
+    }
+    
+    // DEPRECATED: Para mantener compatibilidad con el frontend existente
+    // Será removido en futuras versiones
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("Use Roles property instead")]
+    public List<Guid> RolIds
+    {
+        get => Roles?.Select(r => r.Id).ToList() ?? new List<Guid>();
+        set {} // Setter vacío para deserialización
+    }
 }
