@@ -34,8 +34,11 @@ builder.Services.AddControllers(options =>
     // No mostrar errores de validación en inglés (opcional)
     ValidatorOptions.Global.LanguageManager.Culture = new System.Globalization.CultureInfo("es");
     
-    // Configurar FluentValidation para que no lance excepciones automáticamente
-    fv.AutomaticValidationEnabled = true;
+    // IMPORTANTE: Deshabilitar la validación automática para permitir validadores asincrónicos
+    fv.AutomaticValidationEnabled = false;
+    
+    // Configurar para usar nuestro filtro personalizado en lugar de la validación automática
+    ValidatorOptions.Global.LanguageManager.Enabled = true;
 });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

@@ -96,4 +96,20 @@ public class RolService : IRolService
         
         return true;
     }
+    
+    /// <summary>
+    /// Verifica si existe un rol con el nombre especificado
+    /// </summary>
+    /// <param name="nombre">Nombre del rol a verificar</param>
+    /// <returns>True si existe, False en caso contrario</returns>
+    public async Task<bool> ExistsByNameAsync(string nombre)
+    {
+        if (string.IsNullOrWhiteSpace(nombre))
+        {
+            return false;
+        }
+        
+        var rol = await _rolRepository.GetByNombreAsync(nombre);
+        return rol != null;
+    }
 }

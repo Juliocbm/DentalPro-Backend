@@ -3,6 +3,9 @@ using DentalPro.Domain.Entities;
 
 namespace DentalPro.Application.Interfaces;
 
+/// <summary>
+/// Servicio para la gestión de roles
+/// </summary>
 public interface IRolService
 {
     Task<IEnumerable<Rol>> GetAllAsync();
@@ -11,4 +14,11 @@ public interface IRolService
     Task<RolDto> CreateAsync(RolDto rol);
     Task<bool> UpdateAsync(RolDto rolDto);
     Task<bool> DeleteAsync(Guid id);
+    
+    /// <summary>
+    /// Verifica si existe un rol con el nombre especificado
+    /// </summary>
+    /// <param name="nombre">Nombre del rol a verificar</param>
+    /// <returns>True si existe, False en caso contrario</returns>
+    Task<bool> ExistsByNameAsync(string nombre);
 }

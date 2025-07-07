@@ -22,11 +22,13 @@ public static class DependencyInjection
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IRolRepository, RolRepository>();
+        services.AddScoped<IConsultorioRepository, ConsultorioRepository>();
         
         // Registrar servicios
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<IRolService, RolService>();
+        services.AddScoped<IConsultorioService, ConsultorioService>();
         
         return services;
     }

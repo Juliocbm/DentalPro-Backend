@@ -3,32 +3,57 @@ using DentalPro.Application.DTOs.Auth;
 
 namespace DentalPro.Application.Common.Validators.Auth
 {
+    /// <summary>
+    /// Validador para las solicitudes de registro de usuarios
+    /// </summary>
     public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
     {
         public RegisterRequestValidator()
         {
             RuleFor(x => x.Nombre)
-                .NotEmpty().WithMessage("El nombre es requerido")
-                .Length(2, 100).WithMessage("El nombre debe tener entre 2 y 100 caracteres");
+                .NotEmpty().WithMessage("Por favor, ingrese su nombre completo")
+                .Length(2, 100).WithMessage("El nombre debe tener entre 2 y 100 caracteres")
+                .Matches("^[\\p{L}\\s\\.'-]+$").WithMessage("El nombre solo debe contener letras, espacios y caracteres como .' -");
 
             RuleFor(x => x.Correo)
-                .NotEmpty().WithMessage("El correo electrónico es requerido")
-                .EmailAddress().WithMessage("El formato del correo electrónico no es válido");
+                .NotEmpty().WithMessage("Por favor, ingrese su dirección de correo electrónico")
+                .EmailAddress().WithMessage("El formato del correo electrónico no es válido. Ejemplo correcto: usuario@dominio.com")
+                .MaximumLength(100).WithMessage("El correo electrónico no debe exceder los 100 caracteres");
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("La contraseña es requerida")
-                .MinimumLength(6).WithMessage("La contraseña debe tener al menos 6 caracteres");
+                .NotEmpty().WithMessage("Por favor, ingrese una contraseña")
+                .MinimumLength(6).WithMessage("La contraseña debe tener al menos 6 caracteres")
+                .MaximumLength(100).WithMessage("La contraseña no debe exceder los 100 caracteres")
+                .Must(password => ContainsUppercase(password)).WithMessage("La contraseña debe contener al menos una letra mayúscula")
+                .Must(password => ContainsLowercase(password)).WithMessage("La contraseña debe contener al menos una letra minúscula")
+                .Must(password => ContainsDigit(password)).WithMessage("La contraseña debe contener al menos un número");
 
             RuleFor(x => x.ConfirmPassword)
-                .NotEmpty().WithMessage("La confirmación de la contraseña es requerida")
-                .Equal(x => x.Password).WithMessage("Las contraseñas no coinciden");
+                .NotEmpty().WithMessage("Por favor, confirme su contraseña")
+                .Equal(x => x.Password).WithMessage("Las contraseñas no coinciden. Por favor verifique");
 
             RuleFor(x => x.IdConsultorio)
-                .NotEmpty().WithMessage("El ID del consultorio es requerido");
+                .NotEmpty().WithMessage("Por favor, seleccione un consultorio");
+                
+            RuleFor(x => x.Roles)
+                .NotNull().WithMessage("La lista de roles no puede ser nula")
+                .Must(roles => roles.Count > 0).WithMessage("Debe asignar al menos un rol al usuario")
+                .When(x => x.Roles != null);
                 
             // Los roles son opcionales, pero si se proporcionan, deben ser válidos
             RuleForEach(x => x.Roles)
-                .NotEmpty().WithMessage("Los roles no pueden estar vacíos");
+                .NotEmpty().WithMessage("El nombre del rol no puede estar vacío")
+                .When(x => x.Roles != null);
         }
+        
+        // Métodos auxiliares para validar complejidad de contraseña
+        private bool ContainsUppercase(string password) => 
+            !string.IsNullOrEmpty(password) && password.Any(char.IsUpper);
+
+        private bool ContainsLowercase(string password) => 
+            !string.IsNullOrEmpty(password) && password.Any(char.IsLower);
+
+        private bool ContainsDigit(string password) => 
+            !string.IsNullOrEmpty(password) && password.Any(char.IsDigit);
     }
 }

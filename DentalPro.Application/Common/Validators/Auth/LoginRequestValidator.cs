@@ -3,16 +3,21 @@ using DentalPro.Application.DTOs.Auth;
 
 namespace DentalPro.Application.Common.Validators.Auth
 {
+    /// <summary>
+    /// Validador para las solicitudes de inicio de sesión
+    /// </summary>
     public class LoginRequestValidator : AbstractValidator<LoginRequest>
     {
         public LoginRequestValidator()
         {
             RuleFor(x => x.Correo)
-                .NotEmpty().WithMessage("El correo electrónico es requerido")
-                .EmailAddress().WithMessage("El formato del correo electrónico no es válido");
+                .NotEmpty().WithMessage("Por favor, ingrese su dirección de correo electrónico")
+                .EmailAddress().WithMessage("El formato del correo electrónico no es válido. Ejemplo correcto: usuario@dominio.com")
+                .MaximumLength(100).WithMessage("El correo electrónico no debe exceder los 100 caracteres");
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("La contraseña es requerida");
+                .NotEmpty().WithMessage("Por favor, ingrese su contraseña")
+                .MinimumLength(6).WithMessage("La contraseña debe tener al menos 6 caracteres");
         }
     }
 }
