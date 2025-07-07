@@ -120,7 +120,10 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.LoginRequest>, LoginRequestValidator>();
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.RegisterRequest>, RegisterRequestValidator>();
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Usuario.UsuarioDto>, UsuarioDtoValidator>();
-builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Rol.RolDto>, RolDtoValidator>();
+
+// Registrar validadores de roles (nuevo enfoque unificado)
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Rol.RolCreateDto>, DentalPro.Application.Common.Validators.Roles.RolCreateDtoValidator>();
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Rol.RolUpdateDto>, DentalPro.Application.Common.Validators.Roles.RolUpdateDtoValidator>();
 
 // Registrar validadores de pacientes
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Paciente.PacienteCreateDto>, DentalPro.Application.Common.Validators.Pacientes.PacienteCreateDtoValidator>();

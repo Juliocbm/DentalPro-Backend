@@ -24,70 +24,39 @@ public class RolesController : ControllerBase
     public async Task<ActionResult<IEnumerable<RolDto>>> GetRoles()
     {
         var roles = await _rolService.GetAllAsync();
-        var rolesDto = roles.Select(r => new RolDto
-        {
-            IdRol = r.IdRol,
-            Nombre = r.Nombre,
-            Descripcion = r.Descripcion
-        }).ToList();
-        
-        return Ok(rolesDto);
+        return Ok(roles);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<RolDto>> GetRol(Guid id)
     {
-        var rol = await _rolService.GetByIdAsync(id);
-        if (rol == null)
+        var rolDto = await _rolService.GetByIdAsync(id);
+        if (rolDto == null)
         {
             throw new NotFoundException("Rol", id);
         }
-
-        var rolDto = new RolDto
-        {
-            IdRol = rol.IdRol,
-            Nombre = rol.Nombre,
-            Descripcion = rol.Descripcion
-        };
         
         return Ok(rolDto);
     }
 
     [HttpPost]
-    public async Task<ActionResult<RolDto>> CreateRol([FromBody] RolDto rol)
+    public async Task<ActionResult<RolDto>> CreateRol([FromBody] RolCreateDto rolCreateDto)
     {       
-        var createdRol = await _rolService.CreateAsync(rol);
-        if (createdRol == null)
-        {
-            throw new BadRequestException("No se pudo crear el rol");
-        }
-
+        var createdRol = await _rolService.CreateAsync(rolCreateDto);
         return CreatedAtAction(nameof(GetRol), new { id = createdRol.IdRol }, createdRol);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateRol(Guid id, [FromBody] RolDto rolDto)
+    public async Task<ActionResult<RolDto>> UpdateRol(Guid id, [FromBody] RolUpdateDto rolUpdateDto)
     {
-        if (id != rolDto.IdRol)
+        if (id != rolUpdateDto.IdRol)
         {
             throw new BadRequestException("El ID de la URL no coincide con el ID en el cuerpo de la solicitud");
         }
 
-        var rol = await _rolService.GetByIdAsync(id);
-        if (rol == null)
-        {
-            throw new NotFoundException("Rol", id);
-        }
-
-        rol.Nombre = rolDto.Nombre;
-        
-        var result = await _rolService.UpdateAsync(rolDto);
-        if (!result)
-        {
-            throw new BadRequestException("No se pudo actualizar el rol");
-        }
-
-        return NoContent();
+        // La validación de existencia ahora se maneja en el servicio
+        var updatedRol = await _rolService.UpdateAsync(rolUpdateDto);
+        return Ok(updatedRol);
     }
 
     [HttpDelete("{id}")]

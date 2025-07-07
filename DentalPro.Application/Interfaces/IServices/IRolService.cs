@@ -8,11 +8,34 @@ namespace DentalPro.Application.Interfaces.IServices;
 /// </summary>
 public interface IRolService
 {
-    Task<IEnumerable<Rol>> GetAllAsync();
-    Task<Rol?> GetByIdAsync(Guid id);
-    Task<Rol?> GetByNombreAsync(string nombre);
-    Task<RolDto> CreateAsync(RolDto rol);
-    Task<bool> UpdateAsync(RolDto rolDto);
+    /// <summary>
+    /// Obtiene todos los roles
+    /// </summary>
+    Task<IEnumerable<RolDto>> GetAllAsync();
+    
+    /// <summary>
+    /// Obtiene un rol por su ID
+    /// </summary>
+    Task<RolDto?> GetByIdAsync(Guid id);
+    
+    /// <summary>
+    /// Obtiene un rol por su nombre
+    /// </summary>
+    Task<RolDto?> GetByNombreAsync(string nombre);
+    
+    /// <summary>
+    /// Crea un nuevo rol
+    /// </summary>
+    Task<RolDto> CreateAsync(RolCreateDto rolCreateDto);
+    
+    /// <summary>
+    /// Actualiza un rol existente
+    /// </summary>
+    Task<RolDto> UpdateAsync(RolUpdateDto rolUpdateDto);
+    
+    /// <summary>
+    /// Elimina un rol por su ID
+    /// </summary>
     Task<bool> DeleteAsync(Guid id);
     
     /// <summary>

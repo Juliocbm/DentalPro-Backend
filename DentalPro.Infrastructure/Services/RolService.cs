@@ -19,68 +19,60 @@ public class RolService : IRolService
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<Rol>> GetAllAsync()
+    public async Task<IEnumerable<RolDto>> GetAllAsync()
     {
-        return await _rolRepository.GetAllAsync();
+        var roles = await _rolRepository.GetAllAsync();
+        return _mapper.Map<IEnumerable<RolDto>>(roles);
     }
 
-    public async Task<Rol?> GetByIdAsync(Guid id)
+    public async Task<RolDto?> GetByIdAsync(Guid id)
     {
-        return await _rolRepository.GetByIdAsync(id);
+        var rol = await _rolRepository.GetByIdAsync(id);
+        return rol != null ? _mapper.Map<RolDto>(rol) : null;
     }
 
-    public async Task<Rol?> GetByNombreAsync(string nombre)
+    public async Task<RolDto?> GetByNombreAsync(string nombre)
     {
-        return await _rolRepository.GetByNombreAsync(nombre);
+        var rol = await _rolRepository.GetByNombreAsync(nombre);
+        return rol != null ? _mapper.Map<RolDto>(rol) : null;
     }
 
-    public async Task<RolDto> CreateAsync(RolDto rolDto)
+    public async Task<RolDto> CreateAsync(RolCreateDto rolCreateDto)
     {
-        // Verificar si ya existe un rol con el mismo nombre
-        var existingRol = await _rolRepository.GetByNombreAsync(rolDto.Nombre);
-        if (existingRol != null)
-        {
-            throw new BadRequestException($"Ya existe un rol con el nombre {rolDto.Nombre}", ErrorCodes.DuplicateResourceName);
-        }
-
-        // Generar ID si no existe
-        if (rolDto.IdRol == Guid.Empty)
-        {
-            rolDto.IdRol = Guid.NewGuid();
-        }
-
-        // Mapear automáticamente del DTO a la entidad de dominio
-        var rolEntity = _mapper.Map<Rol>(rolDto);
+        // Las validaciones de duplicados ahora se manejan en el validador RolCreateDtoValidator
+        
+        // Mapear del DTO de creación a la entidad de dominio
+        var rolEntity = _mapper.Map<Rol>(rolCreateDto);
+        
+        // Generar ID para el nuevo rol
+        rolEntity.IdRol = Guid.NewGuid();
 
         // Guardar la entidad en la base de datos
         await _rolRepository.AddAsync(rolEntity);
         await _rolRepository.SaveChangesAsync();
         
-        return rolDto;
+        // Retornar el DTO con los datos completos
+        return _mapper.Map<RolDto>(rolEntity);
     }
 
-    public async Task<bool> UpdateAsync(RolDto rolDto)
+    public async Task<RolDto> UpdateAsync(RolUpdateDto rolUpdateDto)
     {
-        var existingRol = await _rolRepository.GetByIdAsync(rolDto.IdRol);
+        var existingRol = await _rolRepository.GetByIdAsync(rolUpdateDto.IdRol);
         if (existingRol == null)
         {
-            return false;
+            throw new NotFoundException($"No se encontró el rol con ID {rolUpdateDto.IdRol}", ErrorCodes.ResourceNotFound);
         }
 
-        // Verificar que no exista otro rol con el mismo nombre
-        var rolWithName = await _rolRepository.GetByNombreAsync(rolDto.Nombre);
-        if (rolWithName != null && rolWithName.IdRol != rolDto.IdRol)
-        {
-            throw new BadRequestException($"Ya existe otro rol con el nombre {rolDto.Nombre}", ErrorCodes.DuplicateResourceName);
-        }
+        // Las validaciones de duplicados ahora se manejan en el validador RolUpdateDtoValidator
         
         // Mapear los cambios a la entidad existente
-        _mapper.Map(rolDto, existingRol);
+        _mapper.Map(rolUpdateDto, existingRol);
 
         await _rolRepository.UpdateAsync(existingRol);
         await _rolRepository.SaveChangesAsync();
         
-        return true;
+        // Retornar el DTO con los datos actualizados
+        return _mapper.Map<RolDto>(existingRol);
     }
 
     public async Task<bool> DeleteAsync(Guid id)
@@ -104,11 +96,6 @@ public class RolService : IRolService
     /// <returns>True si existe, False en caso contrario</returns>
     public async Task<bool> ExistsByNameAsync(string nombre)
     {
-        if (string.IsNullOrWhiteSpace(nombre))
-        {
-            return false;
-        }
-        
         var rol = await _rolRepository.GetByNombreAsync(nombre);
         return rol != null;
     }
@@ -120,11 +107,6 @@ public class RolService : IRolService
     /// <returns>True si existe, False en caso contrario</returns>
     public async Task<bool> ExistsByIdAsync(Guid id)
     {
-        if (id == Guid.Empty)
-        {
-            return false;
-        }
-        
         var rol = await _rolRepository.GetByIdAsync(id);
         return rol != null;
     }
