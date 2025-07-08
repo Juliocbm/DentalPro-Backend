@@ -27,7 +27,7 @@ builder.Services.AddControllers(options =>
 .AddFluentValidation(fv => 
 {
     // Registrar todos los validadores de forma automática
-    fv.RegisterValidatorsFromAssemblyContaining<LoginRequestValidator>();
+    fv.RegisterValidatorsFromAssemblyContaining<AuthLoginDtoValidator>();
     
     // Desactivar la validación automática de DataAnnotations
     fv.DisableDataAnnotationsValidation = true;
@@ -117,8 +117,8 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // Registrar validadores específicos explícitamente
-builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.LoginRequest>, LoginRequestValidator>();
-builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.RegisterRequest>, RegisterRequestValidator>();
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.AuthLoginDto>, AuthLoginDtoValidator>();
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.AuthRegisterDto>, AuthRegisterDtoValidator>();
 // Mantener para compatibilidad con código existente
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Usuario.UsuarioDto>, UsuarioDtoValidator>();
 

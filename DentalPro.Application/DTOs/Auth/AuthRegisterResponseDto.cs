@@ -1,6 +1,6 @@
 namespace DentalPro.Application.DTOs.Auth;
 
-public class RegisterResponse
+public class AuthRegisterResponseDto
 {
     public bool Success { get; set; }
     public string Message { get; set; } = null!;

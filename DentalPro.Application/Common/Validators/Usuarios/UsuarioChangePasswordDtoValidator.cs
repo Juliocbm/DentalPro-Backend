@@ -6,9 +6,9 @@ namespace DentalPro.Application.Common.Validators.Usuarios;
 /// <summary>
 /// Validador para el DTO de cambio de contraseña
 /// </summary>
-public class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRequest>
+public class UsuarioChangePasswordDtoValidator : AbstractValidator<UsuarioChangePasswordDto>
 {
-    public ChangePasswordRequestValidator()
+    public UsuarioChangePasswordDtoValidator()
     {
         RuleFor(x => x.IdUsuario)
             .NotEmpty().WithMessage("El ID del usuario es requerido");

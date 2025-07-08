@@ -10,15 +10,15 @@ namespace DentalPro.Api.Controllers;
 [Route("api/[controller]")]
 public class ValidationTestController : ControllerBase
 {
-    private readonly IValidator<LoginRequest> _loginValidator;
+    private readonly IValidator<AuthLoginDto> _loginValidator;
 
-    public ValidationTestController(IValidator<LoginRequest> loginValidator)
+    public ValidationTestController(IValidator<AuthLoginDto> loginValidator)
     {
         _loginValidator = loginValidator;
     }
 
     [HttpPost("validate")]
-    public async Task<IActionResult> ValidateLoginRequest([FromBody] LoginRequest request)
+    public async Task<IActionResult> ValidateLoginRequest([FromBody] AuthLoginDto request)
     {
         // Validar manualmente usando FluentValidation
         var validationResult = await _loginValidator.ValidateAsync(request);

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DentalPro.Application.DTOs.Auth;
 
-public class LoginRequest
+public class AuthLoginDto
 {
     [Required(ErrorMessage = "El correo electrónico es requerido")]
     [EmailAddress(ErrorMessage = "El formato del correo electrónico no es válido")]

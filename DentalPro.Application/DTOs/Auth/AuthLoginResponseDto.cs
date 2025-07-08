@@ -1,6 +1,6 @@
-﻿namespace DentalPro.Application.DTOs.Auth;
+namespace DentalPro.Application.DTOs.Auth;
 
-public class LoginResponse
+public class AuthLoginResponseDto
 {
     public string Token { get; set; } = null!;
     public string Nombre { get; set; } = null!;

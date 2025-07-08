@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DentalPro.Application.DTOs.Usuario;
 
-public class ChangePasswordRequest
+public class UsuarioChangePasswordDto
 {
     [Required(ErrorMessage = "El ID del usuario es requerido")]
     public Guid IdUsuario { get; set; }

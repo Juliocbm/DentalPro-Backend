@@ -150,7 +150,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpPost("{id}/cambiar-password")]
-    public async Task<IActionResult> ChangePassword(Guid id, [FromBody] ChangePasswordRequest request)
+    public async Task<IActionResult> ChangePassword(Guid id, [FromBody] UsuarioChangePasswordDto request)
     {
         // Verificar que el ID coincide
         if (id != request.IdUsuario)

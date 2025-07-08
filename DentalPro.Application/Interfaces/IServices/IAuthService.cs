@@ -4,6 +4,6 @@ namespace DentalPro.Application.Interfaces.IServices;
 
 public interface IAuthService
 {
-    Task<LoginResponse> LoginAsync(LoginRequest request);
-    Task<RegisterResponse> RegisterAsync(RegisterRequest request);
+    Task<AuthLoginResponseDto> LoginAsync(AuthLoginDto request);
+    Task<AuthRegisterResponseDto> RegisterAsync(AuthRegisterDto request);
 }

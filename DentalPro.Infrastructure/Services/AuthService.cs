@@ -32,7 +32,7 @@ public class AuthService : IAuthService
         _rolRepository = rolRepository;
     }
 
-    public async Task<LoginResponse> LoginAsync(LoginRequest request)
+    public async Task<AuthLoginResponseDto> LoginAsync(AuthLoginDto request)
     {
         var user = await _context.Usuarios
             .Include(u => u.Roles)
@@ -65,7 +65,7 @@ public class AuthService : IAuthService
             signingCredentials: creds
         );
 
-        return new LoginResponse
+        return new AuthLoginResponseDto
         {
             Token = new JwtSecurityTokenHandler().WriteToken(token),
             Nombre = user.Nombre,
@@ -75,7 +75,7 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
+    public async Task<AuthRegisterResponseDto> RegisterAsync(AuthRegisterDto request)
     {
         if (request.Password != request.ConfirmPassword)
         {
@@ -132,10 +132,10 @@ public class AuthService : IAuthService
         // Obtener los roles asignados
         var userRoles = await _usuarioRepository.GetUserRolesAsync(newUser.IdUsuario);
 
-        return new RegisterResponse
+        return new AuthRegisterResponseDto
         {
             Success = true,
-            Message = "Usuario registrado exitosamente",
+            Message = "Usuario registrado correctamente",
             IdUsuario = newUser.IdUsuario,
             Nombre = newUser.Nombre,
             Correo = newUser.Correo,

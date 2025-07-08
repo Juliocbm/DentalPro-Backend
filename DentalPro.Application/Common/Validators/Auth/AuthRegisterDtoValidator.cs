@@ -6,9 +6,9 @@ namespace DentalPro.Application.Common.Validators.Auth
     /// <summary>
     /// Validador para las solicitudes de registro de usuarios
     /// </summary>
-    public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
+    public class AuthRegisterDtoValidator : AbstractValidator<AuthRegisterDto>
     {
-        public RegisterRequestValidator()
+        public AuthRegisterDtoValidator()
         {
             RuleFor(x => x.Nombre)
                 .NotEmpty().WithMessage("Por favor, ingrese su nombre completo")
@@ -37,23 +37,22 @@ namespace DentalPro.Application.Common.Validators.Auth
                 
             RuleFor(x => x.Roles)
                 .NotNull().WithMessage("La lista de roles no puede ser nula")
-                .Must(roles => roles.Count > 0).WithMessage("Debe asignar al menos un rol al usuario")
-                .When(x => x.Roles != null);
-                
-            // Los roles son opcionales, pero si se proporcionan, deben ser válidos
-            RuleForEach(x => x.Roles)
-                .NotEmpty().WithMessage("El nombre del rol no puede estar vacío")
-                .When(x => x.Roles != null);
+                .Must(roles => roles.Count > 0).WithMessage("Debe asignar al menos un rol al usuario");
         }
-        
-        // Métodos auxiliares para validar complejidad de contraseña
-        private bool ContainsUppercase(string password) => 
-            !string.IsNullOrEmpty(password) && password.Any(char.IsUpper);
 
-        private bool ContainsLowercase(string password) => 
-            !string.IsNullOrEmpty(password) && password.Any(char.IsLower);
+        private bool ContainsUppercase(string password)
+        {
+            return password.Any(char.IsUpper);
+        }
 
-        private bool ContainsDigit(string password) => 
-            !string.IsNullOrEmpty(password) && password.Any(char.IsDigit);
+        private bool ContainsLowercase(string password)
+        {
+            return password.Any(char.IsLower);
+        }
+
+        private bool ContainsDigit(string password)
+        {
+            return password.Any(char.IsDigit);
+        }
     }
 }
