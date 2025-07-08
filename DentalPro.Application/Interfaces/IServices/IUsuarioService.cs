@@ -28,9 +28,4 @@ public interface IUsuarioService
     Task<bool> ExistsByIdAsync(Guid id);
     Task<bool> ExistsByEmailAsync(string email);
     Task<bool> ExistsByEmailExceptCurrentAsync(string email, Guid currentId);
-    
-    // Métodos legacy para compatibilidad (mantener mientras se completa la transición)
-    Task<Usuario> CreateLegacyAsync(Usuario usuario, string password, List<string> roles);
-    Task<Usuario> CreateLegacyWithRolIdsAsync(Usuario usuario, string password, List<Guid> rolIds);
-    Task UpdateLegacyAsync(Usuario usuario);
 }

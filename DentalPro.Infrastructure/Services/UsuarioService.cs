@@ -112,102 +112,6 @@ public class UsuarioService : IUsuarioService
         return _mapper.Map<UsuarioDto>(usuarioCompleto);
     }
 
-    // Método legacy renombrado para compatibilidad
-    public async Task<Usuario> CreateLegacyAsync(Usuario usuario, string password, List<string> roles)
-    {
-        // Validar que el correo no exista
-        var existingUser = await _usuarioRepository.GetByEmailAsync(usuario.Correo);
-        if (existingUser != null)
-        {
-            throw new BadRequestException("El correo electrónico ya está registrado", ErrorCodes.DuplicateEmail);
-        }
-
-        // Hash de la contraseña
-        usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
-
-        // Generar ID si no existe
-        if (usuario.IdUsuario == Guid.Empty)
-        {
-            usuario.IdUsuario = Guid.NewGuid();
-        }
-
-        // Crear usuario
-        var result = await _usuarioRepository.AddAsync(usuario);
-        
-        // Asignar roles
-        if (roles != null && roles.Any())
-        {
-            foreach (var rolNombre in roles)
-            {
-                await _usuarioRepository.AsignarRolAsync(usuario.IdUsuario, rolNombre);
-            }
-        }
-        else
-        {
-            // Rol por defecto
-            await _usuarioRepository.AsignarRolAsync(usuario.IdUsuario, "Usuario");
-        }
-
-        await _usuarioRepository.SaveChangesAsync();
-        
-        return result;
-    }
-    
-    // Método legacy renombrado para compatibilidad
-    public async Task<Usuario> CreateLegacyWithRolIdsAsync(Usuario usuario, string password, List<Guid> rolIds)
-    {
-        // Validar que el correo no exista
-        var existingUser = await _usuarioRepository.GetByEmailAsync(usuario.Correo);
-        if (existingUser != null)
-        {
-            throw new BadRequestException("El correo electrónico ya está registrado", ErrorCodes.DuplicateEmail);
-        }
-
-        // Hash de la contraseña
-        usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
-
-        // Generar ID si no existe
-        if (usuario.IdUsuario == Guid.Empty)
-        {
-            usuario.IdUsuario = Guid.NewGuid();
-        }
-
-        // Crear usuario
-        var result = await _usuarioRepository.AddAsync(usuario);
-        
-        // IMPORTANTE: Guardar el usuario en la base de datos ANTES de asignar roles
-        await _usuarioRepository.SaveChangesAsync();
-        
-        // Asignar roles por ID
-        if (rolIds != null && rolIds.Any())
-        {
-            foreach (var rolId in rolIds)
-            {
-                await _usuarioRepository.AsignarRolPorIdAsync(usuario.IdUsuario, rolId);
-            }
-        }
-        else
-        {
-            // Buscar el rol "Usuario" para asignarlo por defecto
-            var rolUsuario = await _rolRepository.GetByNombreAsync("Usuario");
-            
-            if (rolUsuario != null)
-            {
-                await _usuarioRepository.AsignarRolPorIdAsync(usuario.IdUsuario, rolUsuario.IdRol);
-            }
-            else
-            {
-                // Si no existe el rol Usuario, usar el método original
-                await _usuarioRepository.AsignarRolAsync(usuario.IdUsuario, "Usuario");
-            }
-        }
-
-        // Guardar los cambios de roles
-        await _usuarioRepository.SaveChangesAsync();
-        
-        return result;
-    }
-
     // Nuevo método estandarizado con DTO
     public async Task<UsuarioDto> UpdateAsync(UsuarioUpdateDto usuarioUpdateDto)
     {
@@ -250,30 +154,6 @@ public class UsuarioService : IUsuarioService
         // Recargar el usuario con sus roles actualizados
         var usuarioActualizado = await _usuarioRepository.GetByIdAsync(existingUser.IdUsuario);
         return _mapper.Map<UsuarioDto>(usuarioActualizado);
-    }
-
-    // Método legacy renombrado para compatibilidad
-    public async Task UpdateLegacyAsync(Usuario usuario)
-    {
-        //Posiblemente innecesario, la posibilidad de condicion de carrera es bajo
-        var existingUser = await _usuarioRepository.GetByIdAsync(usuario.IdUsuario);
-        if (existingUser == null)
-        {
-            throw new NotFoundException("Usuario", usuario.IdUsuario);
-        }
-
-        // Validar que el correo no exista para otro usuario
-        var emailUser = await _usuarioRepository.GetByEmailAsync(usuario.Correo);
-        if (emailUser != null && emailUser.IdUsuario != usuario.IdUsuario)
-        {
-            throw new BadRequestException("El correo electrónico ya está en uso por otro usuario", ErrorCodes.DuplicateEmail);
-        }
-
-        // Mantener el mismo hash de contraseña
-        usuario.PasswordHash = existingUser.PasswordHash;
-        
-        await _usuarioRepository.UpdateAsync(usuario);
-        await _usuarioRepository.SaveChangesAsync();
     }
 
     public async Task<bool> DeleteAsync(Guid id)
