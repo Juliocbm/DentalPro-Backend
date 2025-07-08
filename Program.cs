@@ -119,11 +119,16 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 // Registrar validadores específicos explícitamente
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.LoginRequest>, LoginRequestValidator>();
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.RegisterRequest>, RegisterRequestValidator>();
+// Mantener para compatibilidad con código existente
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Usuario.UsuarioDto>, UsuarioDtoValidator>();
 
 // Registrar validadores de roles (nuevo enfoque unificado)
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Rol.RolCreateDto>, DentalPro.Application.Common.Validators.Roles.RolCreateDtoValidator>();
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Rol.RolUpdateDto>, DentalPro.Application.Common.Validators.Roles.RolUpdateDtoValidator>();
+
+// Registrar validadores de usuarios (nuevo enfoque unificado)
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Usuario.UsuarioCreateDto>, DentalPro.Application.Common.Validators.Usuarios.UsuarioCreateDtoValidator>();
+builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Usuario.UsuarioUpdateDto>, DentalPro.Application.Common.Validators.Usuarios.UsuarioUpdateDtoValidator>();
 
 // Registrar validadores de pacientes
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Paciente.PacienteCreateDto>, DentalPro.Application.Common.Validators.Pacientes.PacienteCreateDtoValidator>();

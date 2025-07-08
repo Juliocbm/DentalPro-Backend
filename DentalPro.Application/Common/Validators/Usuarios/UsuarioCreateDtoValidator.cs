@@ -1,4 +1,3 @@
-using System;
 using FluentValidation;
 using DentalPro.Application.DTOs.Usuario;
 using DentalPro.Application.Common.Validators.Async;
@@ -9,10 +8,12 @@ namespace DentalPro.Application.Common.Validators.Usuarios;
 /// <summary>
 /// Validador para el DTO de creación de usuario
 /// </summary>
-[Obsolete("Este validador está obsoleto. Use UsuarioCreateDtoValidator con UsuarioCreateDto en su lugar.")]
-public class CreateUsuarioRequestValidator : AbstractValidator<CreateUsuarioRequest>
+public class UsuarioCreateDtoValidator : AbstractValidator<UsuarioCreateDto>
 {
-    public CreateUsuarioRequestValidator(IConsultorioService consultorioService, IRolService rolService)
+    public UsuarioCreateDtoValidator(
+        IConsultorioService consultorioService, 
+        IRolService rolService, 
+        IUsuarioService usuarioService)
     {
         RuleFor(x => x.Nombre)
             .NotEmpty().WithMessage("El nombre es requerido")
@@ -22,7 +23,10 @@ public class CreateUsuarioRequestValidator : AbstractValidator<CreateUsuarioRequ
         RuleFor(x => x.Correo)
             .NotEmpty().WithMessage("El correo electrónico es requerido")
             .EmailAddress().WithMessage("El formato del correo electrónico no es válido")
-            .MaximumLength(100).WithMessage("El correo electrónico no debe exceder los 100 caracteres");
+            .MaximumLength(100).WithMessage("El correo electrónico no debe exceder los 100 caracteres")
+            .MustAsync(async (correo, cancellation) => 
+                !await usuarioService.ExistsByEmailAsync(correo))
+                .WithMessage("El correo electrónico ya está en uso");
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("La contraseña es requerida")

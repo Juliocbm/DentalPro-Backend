@@ -1,38 +1,119 @@
+using AutoMapper;
+using BCrypt.Net;
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
+using DentalPro.Application.DTOs.Usuario;
 using DentalPro.Application.Interfaces.IRepositories;
-using DentalPro.Domain.Entities;
-using BCrypt.Net;
 using DentalPro.Application.Interfaces.IServices;
+using DentalPro.Domain.Entities;
+using Microsoft.Extensions.Logging;
 namespace DentalPro.Infrastructure.Services;
 
 public class UsuarioService : IUsuarioService
 {
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IRolRepository _rolRepository;
+    private readonly IMapper _mapper;
+    private readonly ILogger<UsuarioService> _logger;
 
-    public UsuarioService(IUsuarioRepository usuarioRepository, IRolRepository rolRepository)
+    public UsuarioService(
+        IUsuarioRepository usuarioRepository, 
+        IRolRepository rolRepository,
+        IMapper mapper,
+        ILogger<UsuarioService> logger)
     {
         _usuarioRepository = usuarioRepository;
         _rolRepository = rolRepository;
+        _mapper = mapper;
+        _logger = logger;
     }
 
-    public async Task<Usuario?> GetByIdAsync(Guid id)
+    public async Task<UsuarioDto?> GetByIdAsync(Guid id)
     {
-        return await _usuarioRepository.GetByIdAsync(id);
+        var usuario = await _usuarioRepository.GetByIdAsync(id);
+        return usuario != null ? _mapper.Map<UsuarioDto>(usuario) : null;
     }
 
-    public async Task<Usuario?> GetByEmailAsync(string email)
+    public async Task<UsuarioDto?> GetByEmailAsync(string email)
     {
-        return await _usuarioRepository.GetByEmailAsync(email);
+        var usuario = await _usuarioRepository.GetByEmailAsync(email);
+        return usuario != null ? _mapper.Map<UsuarioDto>(usuario) : null;
     }
 
-    public async Task<IEnumerable<Usuario>> GetAllByConsultorioAsync(Guid idConsultorio)
+    public async Task<IEnumerable<UsuarioDto>> GetAllByConsultorioAsync(Guid idConsultorio)
     {
-        return await _usuarioRepository.GetByConsultorioAsync(idConsultorio);
+        var usuarios = await _usuarioRepository.GetByConsultorioAsync(idConsultorio);
+        return _mapper.Map<IEnumerable<UsuarioDto>>(usuarios);
+    }
+    
+    // Métodos de validación para los validadores
+    public async Task<bool> ExistsByIdAsync(Guid id)
+    {
+        return await _usuarioRepository.GetByIdAsync(id) != null;
+    }
+    
+    public async Task<bool> ExistsByEmailAsync(string email)
+    {
+        return await _usuarioRepository.GetByEmailAsync(email) != null;
+    }
+    
+    public async Task<bool> ExistsByEmailExceptCurrentAsync(string email, Guid currentId)
+    {
+        var usuario = await _usuarioRepository.GetByEmailAsync(email);
+        return usuario != null && usuario.IdUsuario != currentId;
     }
 
-    public async Task<Usuario> CreateAsync(Usuario usuario, string password, List<string> roles)
+    // Nuevo método estandarizado con DTO
+    public async Task<UsuarioDto> CreateAsync(UsuarioCreateDto usuarioCreateDto)
+    {
+        _logger.LogInformation("Creando nuevo usuario con correo: {Email}", usuarioCreateDto.Correo);
+        
+        // Mapear DTO a entidad
+        var usuario = _mapper.Map<Usuario>(usuarioCreateDto);
+        usuario.IdUsuario = Guid.NewGuid();
+        
+        // Hash de la contraseña
+        usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(usuarioCreateDto.Password);
+        
+        // Crear usuario
+        await _usuarioRepository.AddAsync(usuario);
+        await _usuarioRepository.SaveChangesAsync();
+        
+        // Asignar roles
+        if (usuarioCreateDto.RolIds != null && usuarioCreateDto.RolIds.Any())
+        {
+            foreach (var rolId in usuarioCreateDto.RolIds)
+            {
+                await _usuarioRepository.AsignarRolPorIdAsync(usuario.IdUsuario, rolId);
+            }
+        }
+        else
+        {
+            // Buscar el rol "Usuario" para asignarlo por defecto
+            var rolUsuario = await _rolRepository.GetByNombreAsync("Usuario");
+            
+            if (rolUsuario != null)
+            {
+                await _usuarioRepository.AsignarRolPorIdAsync(usuario.IdUsuario, rolUsuario.IdRol);
+            }
+            else
+            {
+                // Si no existe el rol Usuario, usar el método original
+                await _usuarioRepository.AsignarRolAsync(usuario.IdUsuario, "Usuario");
+            }
+        }
+
+        // Guardar los cambios de roles
+        await _usuarioRepository.SaveChangesAsync();
+        
+        // Recargar el usuario con sus roles para mapear correctamente
+        var usuarioCompleto = await _usuarioRepository.GetByIdAsync(usuario.IdUsuario);
+        
+        return _mapper.Map<UsuarioDto>(usuarioCompleto);
+    }
+
+    // Método legacy renombrado para compatibilidad
+    public async Task<Usuario> CreateLegacyAsync(Usuario usuario, string password, List<string> roles)
     {
         // Validar que el correo no exista
         var existingUser = await _usuarioRepository.GetByEmailAsync(usuario.Correo);
@@ -72,7 +153,8 @@ public class UsuarioService : IUsuarioService
         return result;
     }
     
-    public async Task<Usuario> CreateAsyncWithRolIds(Usuario usuario, string password, List<Guid> rolIds)
+    // Método legacy renombrado para compatibilidad
+    public async Task<Usuario> CreateLegacyWithRolIdsAsync(Usuario usuario, string password, List<Guid> rolIds)
     {
         // Validar que el correo no exista
         var existingUser = await _usuarioRepository.GetByEmailAsync(usuario.Correo);
@@ -126,7 +208,52 @@ public class UsuarioService : IUsuarioService
         return result;
     }
 
-    public async Task UpdateAsync(Usuario usuario)
+    // Nuevo método estandarizado con DTO
+    public async Task<UsuarioDto> UpdateAsync(UsuarioUpdateDto usuarioUpdateDto)
+    {
+        _logger.LogInformation("Actualizando usuario con ID: {UserId}", usuarioUpdateDto.IdUsuario);
+        
+        // Verificar que el usuario existe
+        var existingUser = await _usuarioRepository.GetByIdAsync(usuarioUpdateDto.IdUsuario);
+        if (existingUser == null)
+        {
+            throw new NotFoundException("Usuario", usuarioUpdateDto.IdUsuario);
+        }
+        
+        // Actualizar las propiedades directamente en la entidad existente
+        // en lugar de crear una nueva instancia
+        existingUser.Nombre = usuarioUpdateDto.Nombre;
+        existingUser.Correo = usuarioUpdateDto.Correo;
+        existingUser.Activo = usuarioUpdateDto.Activo;
+        
+        // Guardar los cambios en el usuario
+        await _usuarioRepository.SaveChangesAsync();
+        
+        // Gestionar roles (limpiar y reasignar)
+        // Primero obtenemos los roles actuales del usuario
+        var currentRoles = existingUser.Roles.ToList();
+        
+        // Eliminar roles actuales
+        foreach (var rolUsuario in currentRoles)
+        {
+            await _usuarioRepository.RemoverRolPorIdAsync(existingUser.IdUsuario, rolUsuario.IdRol);
+        }
+        
+        // Asignar los nuevos roles
+        foreach (var rolId in usuarioUpdateDto.RolIds)
+        {
+            await _usuarioRepository.AsignarRolPorIdAsync(existingUser.IdUsuario, rolId);
+        }
+        
+        await _usuarioRepository.SaveChangesAsync();
+        
+        // Recargar el usuario con sus roles actualizados
+        var usuarioActualizado = await _usuarioRepository.GetByIdAsync(existingUser.IdUsuario);
+        return _mapper.Map<UsuarioDto>(usuarioActualizado);
+    }
+
+    // Método legacy renombrado para compatibilidad
+    public async Task UpdateLegacyAsync(Usuario usuario)
     {
         //Posiblemente innecesario, la posibilidad de condicion de carrera es bajo
         var existingUser = await _usuarioRepository.GetByIdAsync(usuario.IdUsuario);

@@ -1,7 +1,9 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace DentalPro.Application.DTOs.Usuario;
 
+[Obsolete("Esta clase está obsoleta. Use UsuarioCreateDto en su lugar.")]
 public class CreateUsuarioRequest
 {
     [Required(ErrorMessage = "El nombre es requerido")]

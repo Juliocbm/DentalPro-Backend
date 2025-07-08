@@ -1,4 +1,3 @@
-using System;
 using FluentValidation;
 using DentalPro.Application.DTOs.Usuario;
 using DentalPro.Application.Common.Validators.Async;
@@ -9,13 +8,17 @@ namespace DentalPro.Application.Common.Validators.Usuarios;
 /// <summary>
 /// Validador para el DTO de actualización de usuario
 /// </summary>
-[Obsolete("Este validador está obsoleto. Use UsuarioUpdateDtoValidator con UsuarioUpdateDto en su lugar.")]
-public class UpdateUsuarioRequestValidator : AbstractValidator<UpdateUsuarioRequest>
+public class UsuarioUpdateDtoValidator : AbstractValidator<UsuarioUpdateDto>
 {
-    public UpdateUsuarioRequestValidator(IConsultorioService consultorioService, IRolService rolService)
+    public UsuarioUpdateDtoValidator(
+        IRolService rolService, 
+        IUsuarioService usuarioService)
     {
         RuleFor(x => x.IdUsuario)
-            .NotEmpty().WithMessage("El ID del usuario es requerido");
+            .NotEmpty().WithMessage("El ID del usuario es requerido")
+            .MustAsync(async (id, cancellation) => 
+                await usuarioService.ExistsByIdAsync(id))
+                .WithMessage("El usuario no existe en el sistema");
 
         RuleFor(x => x.Nombre)
             .NotEmpty().WithMessage("El nombre es requerido")
@@ -25,9 +28,10 @@ public class UpdateUsuarioRequestValidator : AbstractValidator<UpdateUsuarioRequ
         RuleFor(x => x.Correo)
             .NotEmpty().WithMessage("El correo electrónico es requerido")
             .EmailAddress().WithMessage("El formato del correo electrónico no es válido")
-            .MaximumLength(100).WithMessage("El correo electrónico no debe exceder los 100 caracteres");
-
-        // Validación para Activo es opcional ya que es un booleano con valor predeterminado
+            .MaximumLength(100).WithMessage("El correo electrónico no debe exceder los 100 caracteres")
+            .MustAsync(async (model, email, cancellation) => 
+                !await usuarioService.ExistsByEmailExceptCurrentAsync(email, model.IdUsuario))
+                .WithMessage("El correo electrónico ya está en uso por otro usuario");
 
         RuleFor(x => x.RolIds)
             .NotNull().WithMessage("La lista de roles no puede ser nula")

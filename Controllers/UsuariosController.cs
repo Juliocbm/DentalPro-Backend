@@ -39,24 +39,8 @@ public class UsuariosController : ControllerBase
             throw new BadRequestException("ID de consultorio no válido", ErrorCodes.InvalidConsultorio);
         }
 
-        var usuarios = await _usuarioService.GetAllByConsultorioAsync(idConsultorio);
-        
-        var usuariosDto = usuarios.Select(u => new UsuarioDto
-        {
-            IdUsuario = u.IdUsuario,
-            Nombre = u.Nombre,
-            Correo = u.Correo,
-            Activo = u.Activo,
-            IdConsultorio = u.IdConsultorio,
-            Roles = u.Roles
-                .Where(r => r.Rol != null)
-                .Select(r => new RolInfoDto
-                {
-                    Id = r.IdRol,
-                    Nombre = r.Rol!.Nombre
-                })
-                .ToList()
-        }).ToList();
+        // El servicio ya devuelve DTOs mapeados
+        var usuariosDto = await _usuarioService.GetAllByConsultorioAsync(idConsultorio);
         
         return Ok(usuariosDto);
     }
@@ -64,104 +48,59 @@ public class UsuariosController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<UsuarioDto>> GetUsuario(Guid id)
     {
-        var usuario = await _usuarioService.GetByIdAsync(id);
-        if (usuario == null)
+        var usuarioDto = await _usuarioService.GetByIdAsync(id);
+        if (usuarioDto == null)
         {
             throw new NotFoundException("Usuario", id);
         }
 
         // Verificar que el usuario pertenezca al mismo consultorio que el usuario autenticado
         var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
-        if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuario.IdConsultorio != idConsultorio)
+        if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuarioDto.IdConsultorio != idConsultorio)
         {
             throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
         }
 
-        // Convertir a DTO
-        var usuarioDto = new UsuarioDto
-        {
-            IdUsuario = usuario.IdUsuario,
-            Nombre = usuario.Nombre,
-            Correo = usuario.Correo,
-            Activo = usuario.Activo,
-            IdConsultorio = usuario.IdConsultorio,
-            Roles = usuario.Roles
-                .Where(r => r.Rol != null)
-                .Select(r => new RolInfoDto
-                {
-                    Id = r.IdRol,
-                    Nombre = r.Rol!.Nombre
-                })
-                .ToList()
-        };
-        
+        // El DTO ya viene mapeado del servicio
         return Ok(usuarioDto);
     }
 
     [HttpPost]
     [Authorize(Policy = "RequireAdminRole")]
-    public async Task<ActionResult<UsuarioDto>> CreateUsuario([FromBody] CreateUsuarioRequest request)
+    public async Task<ActionResult<UsuarioDto>> CreateUsuario([FromBody] UsuarioCreateDto usuarioCreateDto)
     {
-        if (request.Password != request.ConfirmPassword)
-        {
-            throw new BadRequestException(ErrorMessages.PasswordMismatch);
-        }
-
         // Obtener el ID del consultorio del token JWT
         var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
         if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio))
         {
-            throw new BadRequestException("ID de consultorio no válido");
+            throw new BadRequestException("ID de consultorio no válido", ErrorCodes.InvalidConsultorio);
         }
 
         // Validar que el consultorio del request coincida con el del usuario autenticado
-        if (request.IdConsultorio != idConsultorio)
+        if (usuarioCreateDto.IdConsultorio != idConsultorio)
         {
             throw new ForbiddenAccessException("No puede crear usuarios para otros consultorios");
         }
 
-        // Crear el usuario
-        var usuario = new Usuario
-        {
-            IdUsuario = Guid.NewGuid(),
-            Nombre = request.Nombre,
-            Correo = request.Correo,
-            Activo = true,
-            IdConsultorio = request.IdConsultorio
-        };
+        // La validación de la contraseña ahora se hace en el validador UsuarioCreateDtoValidator
 
-        var createdUsuario = await _usuarioService.CreateAsyncWithRolIds(usuario, request.Password, request.RolIds);
+        // Crear el usuario utilizando el nuevo método con DTO
+        var createdUsuario = await _usuarioService.CreateAsync(usuarioCreateDto);
 
-        var usuarioDto = new UsuarioDto
-        {
-            IdUsuario = createdUsuario.IdUsuario,
-            Nombre = createdUsuario.Nombre,
-            Correo = createdUsuario.Correo,
-            Activo = createdUsuario.Activo,
-            IdConsultorio = createdUsuario.IdConsultorio,
-            Roles = createdUsuario.Roles
-                .Where(r => r.Rol != null)
-                .Select(r => new RolInfoDto
-                {
-                    Id = r.IdRol,
-                    Nombre = r.Rol!.Nombre
-                })
-                .ToList()
-        };
-
-        return CreatedAtAction(nameof(GetUsuario), new { id = usuarioDto.IdUsuario }, usuarioDto);
+        // El DTO ya viene mapeado desde el servicio
+        return CreatedAtAction(nameof(GetUsuario), new { id = createdUsuario.IdUsuario }, createdUsuario);
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Administrador")]
-    public async Task<ActionResult<UsuarioDto>> UpdateUsuario(Guid id, [FromBody] UpdateUsuarioRequest request)
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<ActionResult<UsuarioDto>> UpdateUsuario(Guid id, [FromBody] UsuarioUpdateDto usuarioUpdateDto)
     {
-        if (id != request.IdUsuario)
+        if (id != usuarioUpdateDto.IdUsuario)
         {
             throw new BadRequestException("El ID de la URL no coincide con el ID en el cuerpo de la solicitud", ErrorCodes.ValidationFailed);
         }
 
-        // Obtener el usuario actual
+        // Obtener el usuario actual para verificar su consultorio
         var usuario = await _usuarioService.GetByIdAsync(id);
         if (usuario == null)
         {
@@ -174,64 +113,12 @@ public class UsuariosController : ControllerBase
         {
             throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
         }
-
-            // Actualizar propiedades
-            usuario.Nombre = request.Nombre;
-            usuario.Correo = request.Correo;
-            usuario.Activo = request.Activo;
-            
-            // Actualizar el usuario
-            await _usuarioService.UpdateAsync(usuario);
-
-            // Actualizar roles si es necesario
-            // Primero obtenemos los roles actuales como IDs
-            var currentRolIds = usuario.Roles.Select(r => r.IdRol)
-                                            .ToList();
-
-            // Roles a añadir (están en request.RolIds pero no en currentRolIds)
-            var rolesToAdd = request.RolIds.Except(currentRolIds).ToList();
-            
-            // Roles a eliminar (están en currentRolIds pero no en request.RolIds)
-            var rolesToRemove = currentRolIds.Except(request.RolIds).ToList();
-
-            // Añadir nuevos roles
-            foreach (var rolId in rolesToAdd)
-            {
-                await _usuarioService.AsignarRolPorIdAsync(id, rolId);
-            }
-
-            // Eliminar roles
-            foreach (var rolId in rolesToRemove)
-            {
-                await _usuarioService.RemoverRolPorIdAsync(id, rolId);
-            }
         
-            // Obtener el usuario actualizado para devolverlo en la respuesta
-            var updatedUsuario = await _usuarioService.GetByIdAsync(id);
-            if (updatedUsuario == null)
-            {
-                throw new NotFoundException("Usuario", id);
-            }
+        // Utilizar el método actualizado que maneja los nuevos DTOs
+        // Este método ya incluye la actualización de roles y validaciones
+        var updatedUsuario = await _usuarioService.UpdateAsync(usuarioUpdateDto);
         
-            // Convertir a DTO
-            var usuarioDto = new UsuarioDto
-            {
-                IdUsuario = updatedUsuario.IdUsuario,
-                Nombre = updatedUsuario.Nombre,
-                Correo = updatedUsuario.Correo,
-                Activo = updatedUsuario.Activo,
-                IdConsultorio = updatedUsuario.IdConsultorio,
-                Roles = updatedUsuario.Roles
-                    .Where(r => r.Rol != null)
-                    .Select(r => new RolInfoDto
-                    {
-                        Id = r.IdRol,
-                        Nombre = r.Rol!.Nombre
-                    })
-                    .ToList()
-            };
-        
-            return Ok(usuarioDto);
+        return Ok(updatedUsuario);
     }
 
     [HttpDelete("{id}")]

@@ -1,24 +1,36 @@
+using DentalPro.Application.DTOs.Usuario;
 using DentalPro.Domain.Entities;
 
 namespace DentalPro.Application.Interfaces.IServices;
 
 public interface IUsuarioService
 {
-    Task<Usuario?> GetByIdAsync(Guid id);
-    Task<Usuario?> GetByEmailAsync(string email);
-    Task<IEnumerable<Usuario>> GetAllByConsultorioAsync(Guid idConsultorio);
-    // Método original con nombres de roles (mantener para compatibilidad)
-    Task<Usuario> CreateAsync(Usuario usuario, string password, List<string> roles);
+    // Métodos de consulta
+    Task<UsuarioDto?> GetByIdAsync(Guid id);
+    Task<UsuarioDto?> GetByEmailAsync(string email);
+    Task<IEnumerable<UsuarioDto>> GetAllByConsultorioAsync(Guid idConsultorio);
     
-    // Nuevo método que usa IDs de roles en lugar de nombres
-    Task<Usuario> CreateAsyncWithRolIds(Usuario usuario, string password, List<Guid> rolIds);
-    Task UpdateAsync(Usuario usuario);
+    // Métodos CRUD con DTOs estandarizados
+    Task<UsuarioDto> CreateAsync(UsuarioCreateDto usuarioCreateDto);
+    Task<UsuarioDto> UpdateAsync(UsuarioUpdateDto usuarioUpdateDto);
     Task<bool> DeleteAsync(Guid id);
+    
+    // Gestión de contraseñas
     Task<bool> ChangePasswordAsync(Guid id, string currentPassword, string newPassword);
+    
+    // Gestión de roles
     Task<bool> AsignarRolAsync(Guid idUsuario, string nombreRol);
     Task<bool> RemoverRolAsync(Guid idUsuario, string nombreRol);
-    
-    // Nuevos métodos para trabajar con IDs de rol en lugar de nombres
     Task<bool> AsignarRolPorIdAsync(Guid idUsuario, Guid idRol);
     Task<bool> RemoverRolPorIdAsync(Guid idUsuario, Guid idRol);
+    
+    // Métodos de validación para los validadores
+    Task<bool> ExistsByIdAsync(Guid id);
+    Task<bool> ExistsByEmailAsync(string email);
+    Task<bool> ExistsByEmailExceptCurrentAsync(string email, Guid currentId);
+    
+    // Métodos legacy para compatibilidad (mantener mientras se completa la transición)
+    Task<Usuario> CreateLegacyAsync(Usuario usuario, string password, List<string> roles);
+    Task<Usuario> CreateLegacyWithRolIdsAsync(Usuario usuario, string password, List<Guid> rolIds);
+    Task UpdateLegacyAsync(Usuario usuario);
 }
