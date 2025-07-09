@@ -14,5 +14,12 @@ namespace DentalPro.Application.Interfaces.IRepositories
         Task UpdateAsync(Paciente paciente);
         Task<bool> DeleteAsync(Guid id);
         Task SaveChangesAsync();
+        
+        /// <summary>
+        /// Verifica si existe un paciente con el ID especificado
+        /// </summary>
+        /// <param name="id">ID del paciente a verificar</param>
+        /// <returns>True si existe, False en caso contrario</returns>
+        Task<bool> ExistsByIdAsync(Guid id);
     }
 }

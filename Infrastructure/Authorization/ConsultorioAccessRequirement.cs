@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
+using System;
 
 namespace DentalPro.Api.Infrastructure.Authorization;
 
@@ -9,29 +11,83 @@ public class ConsultorioAccessRequirement : IAuthorizationRequirement
 
 public class ConsultorioAccessHandler : AuthorizationHandler<ConsultorioAccessRequirement>
 {
+    private readonly ILogger<ConsultorioAccessHandler> _logger;
+
+    public ConsultorioAccessHandler(ILogger<ConsultorioAccessHandler> logger = null)
+    {
+        _logger = logger;
+    }
+
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context, 
         ConsultorioAccessRequirement requirement)
     {
+        // Permitir acceso a administradores siempre
+        if (context.User.IsInRole("Administrador"))
+        {
+            _logger?.LogInformation("Acceso permitido a usuario con rol Administrador");
+            context.Succeed(requirement);
+            return Task.CompletedTask;
+        }
+
+        // Verificar si tiene el claim necesario
         if (!context.User.HasClaim(c => c.Type == "IdConsultorio"))
         {
-            // Si no tiene el claim, no se puede validar
+            _logger?.LogWarning("Usuario sin claim IdConsultorio");
             return Task.CompletedTask;
         }
         
-        // El contexto de recurso contendrá el ID del consultorio al que se intenta acceder
-        // Esto se configurará cuando se llame al servicio de autorización desde los controladores
-        
-        if (context.Resource is Guid consultorioId)
+        // El consultorio del usuario desde el claim
+        var userConsultorioIdStr = context.User.FindFirst("IdConsultorio")?.Value;
+        if (string.IsNullOrEmpty(userConsultorioIdStr) || !Guid.TryParse(userConsultorioIdStr, out var userConsultorioId))
         {
-            var userConsultorioId = context.User.FindFirst("IdConsultorio")?.Value;
-            if (!string.IsNullOrEmpty(userConsultorioId) && Guid.TryParse(userConsultorioId, out var userConsId))
+            _logger?.LogWarning($"Claim IdConsultorio inválido: {userConsultorioIdStr}");
+            return Task.CompletedTask;
+        }
+
+        // Si no se pasa recurso, autorizamos basado solo en la presencia del claim válido
+        if (context.Resource == null)
+        {
+            _logger?.LogInformation("Autorización basada solo en presencia de claim válido");
+            context.Succeed(requirement);
+            return Task.CompletedTask;
+        }
+
+        // Intentar extraer el ID del consultorio del recurso
+        Guid? resourceConsultorioId = null;
+        
+        // Caso 1: El recurso es directamente un Guid
+        if (context.Resource is Guid directGuid)
+        {
+            resourceConsultorioId = directGuid;
+            _logger?.LogInformation($"Recurso es un Guid directo: {directGuid}");
+        }
+        // Caso 2: El recurso es un string que puede convertirse a Guid
+        else if (context.Resource is string guidString && Guid.TryParse(guidString, out var parsedGuid))
+        {
+            resourceConsultorioId = parsedGuid;
+            _logger?.LogInformation($"Recurso es un string convertible a Guid: {parsedGuid}");
+        }
+
+        // Si pudimos extraer un ID de consultorio del recurso, comparamos
+        if (resourceConsultorioId.HasValue)
+        {
+            if (userConsultorioId == resourceConsultorioId.Value)
             {
-                if (userConsId == consultorioId)
-                {
-                    context.Succeed(requirement);
-                }
+                _logger?.LogInformation($"Autorizado: consultorio del usuario {userConsultorioId} coincide con el recurso {resourceConsultorioId.Value}");
+                context.Succeed(requirement);
             }
+            else
+            {
+                _logger?.LogWarning($"No autorizado: consultorio del usuario {userConsultorioId} no coincide con el recurso {resourceConsultorioId.Value}");
+            }
+        }
+        else
+        {
+            // Si no pudimos extraer el ID del consultorio del recurso pero el usuario tiene un claim válido,
+            // autorizamos de todas formas (comportamiento más permisivo)
+            _logger?.LogInformation("Autorización por defecto (recurso no contiene Guid de consultorio)");
+            context.Succeed(requirement);
         }
 
         return Task.CompletedTask;

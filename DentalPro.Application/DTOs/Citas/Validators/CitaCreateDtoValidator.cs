@@ -1,0 +1,32 @@
+using DentalPro.Application.Common.Constants;
+using DentalPro.Application.DTOs.Citas;
+using DentalPro.Application.Validators.Common;
+using FluentValidation;
+
+namespace DentalPro.Application.DTOs.Citas.Validators;
+
+public class CitaCreateDtoValidator : AbstractValidator<CitaCreateDto>
+{
+    public CitaCreateDtoValidator(PacienteExistenceAsyncValidator pacienteValidator)
+    {
+        RuleFor(c => c.FechaHoraInicio)
+            .NotEmpty().WithMessage("La fecha y hora de inicio son requeridas.")
+            .Must(f => f > DateTime.Now).WithMessage(ErrorMessages.CitaPastDate)
+            .WithErrorCode(ErrorCodes.CitaPastDate);
+
+        RuleFor(c => c.FechaHoraFin)
+            .NotEmpty().WithMessage("La fecha y hora de fin son requeridas.")
+            .GreaterThan(c => c.FechaHoraInicio)
+            .WithMessage(ErrorMessages.CitaInvalidTimeRange)
+            .WithErrorCode(ErrorCodes.CitaInvalidTimeRange);
+
+        RuleFor(c => c.Motivo)
+            .MaximumLength(250).WithMessage("El motivo no puede exceder los 250 caracteres.");
+
+        RuleFor(c => c.IdPaciente)
+            .NotEmpty().WithMessage("El paciente es requerido.")
+            .MustAsync(async (id, _) => await pacienteValidator.ExistsAsync(id))
+            .WithMessage(ErrorMessages.PacienteNotFound)
+            .WithErrorCode(ErrorCodes.PacienteNotFound);
+    }
+}

@@ -40,4 +40,14 @@ public static class ErrorMessages
     public const string PatientHasActiveAppointments = "No se puede eliminar el paciente porque tiene citas programadas.";
     public const string PatientHasPendingPayments = "No se puede eliminar el paciente porque tiene pagos pendientes.";
     public const string InvalidDateOfBirth = "La fecha de nacimiento no es válida.";
+    
+    // Mensajes específicos para citas
+    public const string CitaNotFound = "La cita solicitada no existe.";
+    public const string CitaOverlap = "Ya existe una cita programada para este horario.";
+    public const string CitaPastDate = "No se pueden programar citas en fechas pasadas.";
+    public const string CitaInvalidTimeRange = "La hora de fin debe ser posterior a la hora de inicio.";
+    public const string CitaCancelled = "La cita ya ha sido cancelada.";
+    public const string CitaOutsideBusinessHours = "La cita debe estar dentro del horario laboral.";
+    public const string PacienteNotFound = "El paciente no existe.";
+    public const string UsuarioNotFound = "El usuario no existe.";
 }

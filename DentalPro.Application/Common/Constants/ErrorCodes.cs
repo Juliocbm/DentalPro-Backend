@@ -15,11 +15,14 @@ public static class ErrorCodes
     public const string InvalidCredentials = "ERR-2001";
     public const string TokenExpired = "ERR-2002";
     public const string InvalidToken = "ERR-2003";
+    public const string Unauthorized = "ERR-2004";
     
     // Errores de autorización - Rango 3000
     public const string InsufficientPermissions = "ERR-3000";
     public const string ResourceAccessDenied = "ERR-3001";
     public const string InvalidConsultorio = "ERR-3002";
+    public const string ConsultorioNotFound = "ERR-3003";
+    public const string UserInactive = "ERR-3004";
     
     // Errores de validación - Rango 4000
     public const string ValidationFailed = "ERR-4000";
@@ -37,4 +40,15 @@ public static class ErrorCodes
     public const string DatabaseError = "ERR-6000";
     public const string ConcurrencyIssue = "ERR-6001";
     public const string DataIntegrityViolation = "ERR-6002";
+    
+    // Errores de citas - Rango 7000
+    public const string CitaNotFound = "ERR-7000";
+    public const string CitaOverlap = "ERR-7001";
+    public const string CitaPastDate = "ERR-7002";
+    public const string CitaInvalidTimeRange = "ERR-7003";
+    public const string CitaCancelled = "ERR-7004";
+    public const string CitaOutsideBusinessHours = "ERR-7005";
+    public const string PacienteNotFound = "ERR-7006";
+    public const string UsuarioNotFound = "ERR-7007";
+    public const string UserNotFound = "ERR-7008";
 }

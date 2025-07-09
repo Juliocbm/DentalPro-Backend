@@ -72,5 +72,16 @@ namespace DentalPro.Infrastructure.Persistence.Repositories
         {
             await _context.SaveChangesAsync();
         }
+        
+        /// <summary>
+        /// Verifica si existe un paciente con el ID especificado
+        /// </summary>
+        /// <param name="id">ID del paciente a verificar</param>
+        /// <returns>True si existe, False en caso contrario</returns>
+        public async Task<bool> ExistsByIdAsync(Guid id)
+        {
+            return await _context.Pacientes
+                .AnyAsync(p => p.IdPaciente == id);
+        }
     }
 }

@@ -26,6 +26,8 @@ namespace DentalPro.Infrastructure.Persistence
         public DbSet<Consultorio> Consultorios => Set<Consultorio>();
         public DbSet<Paciente> Pacientes => Set<Paciente>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<Cita> Citas => Set<Cita>();
+        public DbSet<Recordatorio> Recordatorios => Set<Recordatorio>();
         // Agrega aquí más DbSet según tus entidades
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

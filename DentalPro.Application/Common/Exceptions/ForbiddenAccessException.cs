@@ -9,4 +9,9 @@ public class ForbiddenAccessException : ApplicationException
         : base(message, "FORBIDDEN_ACCESS")
     {
     }
+    
+    public ForbiddenAccessException(string message, string errorCode) 
+        : base(message, errorCode)
+    {
+    }
 }
