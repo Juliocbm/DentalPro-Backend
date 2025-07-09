@@ -30,12 +30,62 @@ namespace DentalPro.Infrastructure.Persistence
         public DbSet<Recordatorio> Recordatorios => Set<Recordatorio>();
         public DbSet<Rol> Roles => Set<Rol>();
         public DbSet<UsuarioRol> UsuarioRoles => Set<UsuarioRol>();
-        // Agrega aquí más DbSet según tus entidades
+        public DbSet<Permiso> Permisos => Set<Permiso>();
+        public DbSet<RolPermiso> RolesPermisos => Set<RolPermiso>();
+        public DbSet<UsuarioPermiso> UsuariosPermisos => Set<UsuarioPermiso>();
+        // Entidades para el sistema de permisos y roles
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+            
+            // Configuración de DoctorDetail como owned entity type
+            modelBuilder.Entity<Usuario>()
+                .OwnsOne(u => u.DoctorDetail, builder => 
+                {
+                    builder.ToTable("DoctoresDetalles");
+                    
+                    builder.Property(d => d.Especialidad)
+                        .HasMaxLength(100)
+                        .IsRequired();
+                        
+                    builder.Property(d => d.NumeroLicencia)
+                        .HasMaxLength(50);
+                        
+                    builder.Property(d => d.Certificaciones)
+                        .HasMaxLength(1000);
+                });
+                
+            // Configuración de clave primaria compuesta para RolPermiso
+            modelBuilder.Entity<RolPermiso>()
+                .HasKey(rp => new { rp.IdRol, rp.IdPermiso });
+                
+            // Configuración de relación muchos a muchos entre Rol y Permiso
+            modelBuilder.Entity<RolPermiso>()
+                .HasOne(rp => rp.Rol)
+                .WithMany(r => r.Permisos)
+                .HasForeignKey(rp => rp.IdRol);
+                
+            modelBuilder.Entity<RolPermiso>()
+                .HasOne(rp => rp.Permiso)
+                .WithMany(p => p.Roles)
+                .HasForeignKey(rp => rp.IdPermiso);
+                
+            // Configuración de clave primaria compuesta para UsuarioPermiso
+            modelBuilder.Entity<UsuarioPermiso>()
+                .HasKey(up => new { up.IdUsuario, up.IdPermiso });
+                
+            // Configuración de relación muchos a muchos entre Usuario y Permiso
+            modelBuilder.Entity<UsuarioPermiso>()
+                .HasOne(up => up.Usuario)
+                .WithMany(u => u.Permisos)
+                .HasForeignKey(up => up.IdUsuario);
+                
+            modelBuilder.Entity<UsuarioPermiso>()
+                .HasOne(up => up.Permiso)
+                .WithMany(p => p.Usuarios)
+                .HasForeignKey(up => up.IdPermiso);
 
             // Filtro global por IdConsultorio para entidades que lo incluyan
             // Solo aplicar el filtro si tenemos un ID de consultorio
