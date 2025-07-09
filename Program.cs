@@ -14,6 +14,7 @@ using DentalPro.Application.Common.Validators.Roles;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using DentalPro.Application.Interfaces.IServices;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,7 +46,36 @@ builder.Services.AddControllers(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "DentalPro API", Version = "v1" });
+    // Documento principal para las APIs core
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { 
+        Title = "DentalPro API", 
+        Version = "v1",
+        Description = "API principal de DentalPro con todas las operaciones de negocio"
+    });
+    
+    // Documento específico para las APIs de diagnóstico
+    c.SwaggerDoc("diagnostico", new Microsoft.OpenApi.Models.OpenApiInfo { 
+        Title = "DentalPro Diagnóstico API", 
+        Version = "v1",
+        Description = "APIs de diagnóstico y pruebas para DentalPro"
+    });
+    
+    // Configurar documentos según grupos de API
+    c.DocInclusionPredicate((docName, apiDesc) =>
+    {
+        if (!apiDesc.TryGetMethodInfo(out var methodInfo)) return false;
+        
+        var groupName = methodInfo.DeclaringType
+            .GetCustomAttributes(true)
+            .OfType<Microsoft.AspNetCore.Mvc.ApiExplorerSettingsAttribute>()
+            .Select(attr => attr.GroupName)
+            .FirstOrDefault();
+            
+        if (docName == "diagnostico")
+            return groupName == "diagnostico";
+        else
+            return groupName != "diagnostico";
+    });
     
     // Configurar Swagger para JWT
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -148,7 +178,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c => {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "DentalPro API v1");
+        c.SwaggerEndpoint("/swagger/diagnostico/swagger.json", "Diagnóstico API");
+        c.RoutePrefix = "swagger";
+    });
 }
 
 app.UseHttpsRedirection();
