@@ -1,5 +1,11 @@
-﻿namespace DentalPro.Domain.Entities;
+using System;
+using System.Collections.Generic;
 
+namespace DentalPro.Domain.Entities;
+
+/// <summary>
+/// Representa un usuario del sistema con sus datos básicos y relaciones
+/// </summary>
 public class Usuario
 {
     public Guid IdUsuario { get; set; }
@@ -11,5 +17,10 @@ public class Usuario
     public Guid IdConsultorio { get; set; }
     public Consultorio? Consultorio { get; set; }
 
-    public ICollection<UsuarioRol> Roles { get; set; } = new List<UsuarioRol>();
+    // Propiedades específicas por tipo de usuario
+    public DoctorDetail? DoctorDetail { get; set; }
+
+    // Relaciones de navegación
+    public virtual ICollection<UsuarioRol> Roles { get; set; } = new List<UsuarioRol>();
+    public virtual ICollection<UsuarioPermiso> Permisos { get; set; } = new List<UsuarioPermiso>();
 }
