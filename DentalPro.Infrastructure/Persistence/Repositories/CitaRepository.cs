@@ -20,7 +20,7 @@ public class CitaRepository : ICitaRepository
     {
         return await _context.Citas
             .Include(c => c.Paciente)
-            .Include(c => c.Usuario)
+            .Include(c => c.Doctor)
             .ToListAsync();
     }
 
@@ -28,7 +28,7 @@ public class CitaRepository : ICitaRepository
     {
         return await _context.Citas
             .Include(c => c.Paciente)
-            .Include(c => c.Usuario)
+            .Include(c => c.Doctor)
             .Where(c => c.Paciente.IdConsultorio == idConsultorio)
             .ToListAsync();
     }
@@ -36,16 +36,16 @@ public class CitaRepository : ICitaRepository
     public async Task<IEnumerable<Cita>> GetByPacienteAsync(Guid idPaciente)
     {
         return await _context.Citas
-            .Include(c => c.Usuario)
+            .Include(c => c.Doctor)
             .Where(c => c.IdPaciente == idPaciente)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Cita>> GetByUsuarioAsync(Guid idUsuario)
+    public async Task<IEnumerable<Cita>> GetByDoctorAsync(Guid idDoctor)
     {
         return await _context.Citas
             .Include(c => c.Paciente)
-            .Where(c => c.IdUsuario == idUsuario)
+            .Where(c => c.IdDoctor == idDoctor)
             .ToListAsync();
     }
 
@@ -53,7 +53,7 @@ public class CitaRepository : ICitaRepository
     {
         return await _context.Citas
             .Include(c => c.Paciente)
-            .Include(c => c.Usuario)
+            .Include(c => c.Doctor)
             .Where(c => c.FechaHoraInicio >= fechaInicio && 
                    c.FechaHoraFin <= fechaFin && 
                    c.Paciente.IdConsultorio == idConsultorio)
@@ -64,7 +64,7 @@ public class CitaRepository : ICitaRepository
     {
         return await _context.Citas
             .Include(c => c.Paciente)
-            .Include(c => c.Usuario)
+            .Include(c => c.Doctor)
             .Include(c => c.Recordatorios)
             .FirstOrDefaultAsync(c => c.IdCita == id);
     }
@@ -74,10 +74,10 @@ public class CitaRepository : ICitaRepository
         return await _context.Citas.AnyAsync(c => c.IdCita == id);
     }
 
-    public async Task<bool> HasOverlappingAppointmentsAsync(Guid idUsuario, DateTime fechaInicio, DateTime fechaFin, Guid? idCitaExcluir = null)
+    public async Task<bool> HasOverlappingAppointmentsAsync(Guid idDoctor, DateTime fechaInicio, DateTime fechaFin, Guid? idCitaExcluir = null)
     {
         var query = _context.Citas.Where(c => 
-            c.IdUsuario == idUsuario &&
+            c.IdDoctor == idDoctor &&
             c.Estatus != "Cancelada" &&
             ((c.FechaHoraInicio <= fechaInicio && c.FechaHoraFin > fechaInicio) || // Cita existente cubre inicio de nueva cita
              (c.FechaHoraInicio < fechaFin && c.FechaHoraFin >= fechaFin) || // Cita existente cubre fin de nueva cita

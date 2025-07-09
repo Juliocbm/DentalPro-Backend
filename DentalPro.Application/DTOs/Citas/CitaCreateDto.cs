@@ -11,5 +11,5 @@ public class CitaCreateDto
     public DateTime FechaHoraFin { get; set; }
     public string? Motivo { get; set; }
     public Guid IdPaciente { get; set; }
-    // El IdUsuario se obtendrá del token JWT del usuario autenticado
+    public Guid IdDoctor { get; set; }
 }

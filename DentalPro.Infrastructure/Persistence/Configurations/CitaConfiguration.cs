@@ -31,9 +31,9 @@ public class CitaConfiguration : IEntityTypeConfiguration<Cita>
             .HasForeignKey(c => c.IdPaciente)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(c => c.Usuario)
+        builder.HasOne(c => c.Doctor)
             .WithMany()
-            .HasForeignKey(c => c.IdUsuario)
+            .HasForeignKey(c => c.IdDoctor)
             .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }

@@ -63,7 +63,7 @@ public class CitasController : ControllerBase
     [RequireConsultorioAccess]
     public async Task<ActionResult<IEnumerable<CitaDto>>> GetByUsuario(Guid idUsuario)
     {
-        var citas = await _citaService.GetByUsuarioAsync(idUsuario);
+        var citas = await _citaService.GetByDoctorAsync(idUsuario);
         return Ok(citas);
     }
 
@@ -85,7 +85,7 @@ public class CitasController : ControllerBase
     [RequireConsultorioAccess]
     public async Task<ActionResult<CitaDto>> Create(CitaCreateDto citaDto)
     {
-        // Obtener el ID del usuario actual desde el token
+        // Obtener el ID del usuario actual desde el token (para auditoría/registro)
         var idUsuarioActual = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         var citaCreada = await _citaService.CreateAsync(citaDto, idUsuarioActual);
         return CreatedAtAction(nameof(GetById), new { id = citaCreada.IdCita }, citaCreada);

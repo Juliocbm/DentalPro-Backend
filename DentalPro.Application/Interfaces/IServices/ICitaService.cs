@@ -23,9 +23,9 @@ public interface ICitaService
     Task<IEnumerable<CitaDto>> GetByPacienteAsync(Guid idPaciente);
     
     /// <summary>
-    /// Obtiene todas las citas de un usuario (doctor) específico
+    /// Obtiene todas las citas de un doctor específico
     /// </summary>
-    Task<IEnumerable<CitaDto>> GetByUsuarioAsync(Guid idUsuario);
+    Task<IEnumerable<CitaDto>> GetByDoctorAsync(Guid idDoctor);
     
     /// <summary>
     /// Obtiene una cita por su ID

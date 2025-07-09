@@ -19,8 +19,8 @@ public class CitaDetailDto
     public string EmailPaciente { get; set; } = null!;
     public string? TelefonoPaciente { get; set; }
     
-    // Información del doctor/usuario
-    public Guid IdUsuario { get; set; }
+    // Información del doctor
+    public Guid IdDoctor { get; set; }
     public string NombreCompletoDoctor { get; set; } = null!;
     public string EmailDoctor { get; set; } = null!;
     

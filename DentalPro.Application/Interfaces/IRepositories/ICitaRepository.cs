@@ -23,9 +23,9 @@ public interface ICitaRepository
     Task<IEnumerable<Cita>> GetByPacienteAsync(Guid idPaciente);
     
     /// <summary>
-    /// Obtiene todas las citas de un usuario (doctor)
+    /// Obtiene todas las citas de un doctor
     /// </summary>
-    Task<IEnumerable<Cita>> GetByUsuarioAsync(Guid idUsuario);
+    Task<IEnumerable<Cita>> GetByDoctorAsync(Guid idDoctor);
     
     /// <summary>
     /// Obtiene todas las citas por rango de fechas
@@ -45,7 +45,7 @@ public interface ICitaRepository
     /// <summary>
     /// Verifica si existen citas traslapadas para un doctor en un rango de fechas
     /// </summary>
-    Task<bool> HasOverlappingAppointmentsAsync(Guid idUsuario, DateTime fechaInicio, DateTime fechaFin, Guid? idCitaExcluir = null);
+    Task<bool> HasOverlappingAppointmentsAsync(Guid idDoctor, DateTime fechaInicio, DateTime fechaFin, Guid? idCitaExcluir = null);
     
     /// <summary>
     /// Agrega una nueva cita

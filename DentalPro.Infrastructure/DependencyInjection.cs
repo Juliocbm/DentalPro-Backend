@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IConsultorioRepository, ConsultorioRepository>();
         services.AddScoped<ICitaRepository, CitaRepository>();
         services.AddScoped<IRecordatorioRepository, RecordatorioRepository>();
+        services.AddScoped<IDoctorRepository, DoctorRepository>();
         
         // Registrar servicios
         services.AddScoped<IAuthService, AuthService>();

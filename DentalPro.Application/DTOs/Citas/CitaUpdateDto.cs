@@ -13,4 +13,5 @@ public class CitaUpdateDto
     public string? Motivo { get; set; }
     public string Estatus { get; set; } = null!;
     public Guid IdPaciente { get; set; }
+    public Guid IdDoctor { get; set; }
 }

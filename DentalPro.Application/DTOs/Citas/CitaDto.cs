@@ -13,7 +13,7 @@ public class CitaDto
     public string? Motivo { get; set; }
     public string Estatus { get; set; } = null!;
     public Guid IdPaciente { get; set; }
-    public Guid IdUsuario { get; set; }
+    public Guid IdDoctor { get; set; }
     
     // Propiedades calculadas en el mapeo
     public string NombrePaciente { get; set; } = null!;

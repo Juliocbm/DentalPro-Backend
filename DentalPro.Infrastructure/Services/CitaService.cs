@@ -17,6 +17,7 @@ public class CitaService : ICitaService
     private readonly ICitaRepository _citaRepository;
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IPacienteRepository _pacienteRepository;
+    private readonly IDoctorRepository _doctorRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IMapper _mapper;
     private readonly ILogger<CitaService> _logger;
@@ -25,6 +26,7 @@ public class CitaService : ICitaService
         ICitaRepository citaRepository,
         IUsuarioRepository usuarioRepository,
         IPacienteRepository pacienteRepository,
+        IDoctorRepository doctorRepository,
         ICurrentUserService currentUserService,
         IMapper mapper,
         ILogger<CitaService> logger)
@@ -32,6 +34,7 @@ public class CitaService : ICitaService
         _citaRepository = citaRepository;
         _usuarioRepository = usuarioRepository;
         _pacienteRepository = pacienteRepository;
+        _doctorRepository = doctorRepository;
         _currentUserService = currentUserService;
         _mapper = mapper;
         _logger = logger;
@@ -63,15 +66,23 @@ public class CitaService : ICitaService
         return _mapper.Map<IEnumerable<CitaDto>>(citas);
     }
 
-    public async Task<IEnumerable<CitaDto>> GetByUsuarioAsync(Guid idUsuario)
+    public async Task<IEnumerable<CitaDto>> GetByDoctorAsync(Guid idDoctor)
     {
-        var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
-        if (usuario == null)
+        // Verificar que el usuario exista
+        var doctor = await _usuarioRepository.GetByIdAsync(idDoctor);
+        if (doctor == null)
         {
             throw new NotFoundException(ErrorMessages.UsuarioNotFound, ErrorCodes.UsuarioNotFound);
         }
+        
+        // Verificar que el usuario sea un doctor
+        var esDoctor = await _doctorRepository.IsUserDoctorAsync(idDoctor);
+        if (!esDoctor)
+        {
+            throw new BadRequestException("El usuario no tiene rol de Doctor", ErrorCodes.InvalidOperation);
+        }
 
-        var citas = await _citaRepository.GetByUsuarioAsync(idUsuario);
+        var citas = await _citaRepository.GetByDoctorAsync(idDoctor);
         return _mapper.Map<IEnumerable<CitaDto>>(citas);
     }
 
@@ -102,10 +113,19 @@ public class CitaService : ICitaService
         {
             throw new NotFoundException(ErrorMessages.PacienteNotFound, ErrorCodes.PacienteNotFound);
         }
+        
+        // Verificar que el usuario asignado sea un doctor
+        var esDoctor = await _doctorRepository.IsUserDoctorAsync(citaDto.IdDoctor);
+        if (!esDoctor)
+        {
+            throw new ValidationException(
+                "Solo se pueden agendar citas a usuarios con rol de Doctor", 
+                ErrorCodes.InvalidOperation);
+        }
 
-        // Verificar si hay traslape de citas para este usuario/doctor
+        // Verificar si hay traslape de citas para este doctor
         var hayTraslape = await _citaRepository.HasOverlappingAppointmentsAsync(
-            idUsuarioActual, citaDto.FechaHoraInicio, citaDto.FechaHoraFin);
+            citaDto.IdDoctor, citaDto.FechaHoraInicio, citaDto.FechaHoraFin);
 
         if (hayTraslape)
         {
@@ -126,7 +146,6 @@ public class CitaService : ICitaService
 
         // Crear la cita
         var cita = _mapper.Map<Cita>(citaDto);
-        cita.IdUsuario = idUsuarioActual;
         cita.Estatus = "Programada";  // Estado inicial por defecto
 
         var citaCreated = await _citaRepository.AddAsync(cita);
@@ -147,6 +166,18 @@ public class CitaService : ICitaService
         {
             throw new BadRequestException(ErrorMessages.CitaCancelled, ErrorCodes.CitaCancelled);
         }
+        
+        // Verificar que el usuario asignado sea un doctor
+        if (citaDto.IdDoctor != citaExistente.IdDoctor)
+        {
+            var esDoctor = await _doctorRepository.IsUserDoctorAsync(citaDto.IdDoctor);
+            if (!esDoctor)
+            {
+                throw new ValidationException(
+                    "Solo se pueden agendar citas a usuarios con rol de Doctor", 
+                    ErrorCodes.InvalidOperation);
+            }
+        }
 
         // Verificar si existe el paciente
         var paciente = await _pacienteRepository.GetByIdAsync(citaDto.IdPaciente);
@@ -155,9 +186,9 @@ public class CitaService : ICitaService
             throw new NotFoundException(ErrorMessages.PacienteNotFound, ErrorCodes.PacienteNotFound);
         }
 
-        // Verificar si hay traslape de citas para este usuario/doctor (excluyendo la cita actual)
+        // Verificar si hay traslape de citas para este doctor (excluyendo la cita actual)
         var hayTraslape = await _citaRepository.HasOverlappingAppointmentsAsync(
-            citaExistente.IdUsuario, citaDto.FechaHoraInicio, citaDto.FechaHoraFin, citaDto.IdCita);
+            citaDto.IdDoctor, citaDto.FechaHoraInicio, citaDto.FechaHoraFin, citaDto.IdCita);
 
         if (hayTraslape)
         {
