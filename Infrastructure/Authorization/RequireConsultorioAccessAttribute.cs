@@ -11,21 +11,21 @@ using System.Linq;
 namespace DentalPro.Api.Infrastructure.Authorization
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-    public class SameConsultorioAttribute : AuthorizeAttribute, IAsyncAuthorizationFilter
+    public class RequireConsultorioAccessAttribute : AuthorizeAttribute, IAsyncAuthorizationFilter
     {
-        public SameConsultorioAttribute() : base("SameConsultorio")
+        public RequireConsultorioAccessAttribute() : base("RequireConsultorioAccess")
         {
         }
         
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
             // Obtenemos el logger para diagnóstico
-            var logger = context.HttpContext.RequestServices.GetService(typeof(ILogger<SameConsultorioAttribute>)) as ILogger<SameConsultorioAttribute>;
+            var logger = context.HttpContext.RequestServices.GetService(typeof(ILogger<RequireConsultorioAccessAttribute>)) as ILogger<RequireConsultorioAccessAttribute>;
             
             // Si no está autenticado, no hacemos nada (deja que el sistema maneje esto)
             if (!context.HttpContext.User.Identity.IsAuthenticated)
             {
-                logger?.LogWarning("Usuario no autenticado en SameConsultorioAttribute");
+                logger?.LogWarning("Usuario no autenticado en RequireConsultorioAccessAttribute");
                 return;
             }
 

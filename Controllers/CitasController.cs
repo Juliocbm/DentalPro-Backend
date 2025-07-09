@@ -25,7 +25,7 @@ public class CitasController : ControllerBase
     /// Obtiene todas las citas del consultorio del usuario actual
     /// </summary>
     [HttpGet]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult<IEnumerable<CitaDto>>> GetAll()
     {
         var citas = await _citaService.GetAllAsync();
@@ -36,7 +36,7 @@ public class CitasController : ControllerBase
     /// Obtiene todas las citas en un rango de fechas
     /// </summary>
     [HttpGet("rango")]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult<IEnumerable<CitaDto>>> GetByDateRange(
         [FromQuery] DateTime fechaInicio, 
         [FromQuery] DateTime fechaFin)
@@ -49,7 +49,7 @@ public class CitasController : ControllerBase
     /// Obtiene todas las citas de un paciente específico
     /// </summary>
     [HttpGet("paciente/{idPaciente:guid}")]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult<IEnumerable<CitaDto>>> GetByPaciente(Guid idPaciente)
     {
         var citas = await _citaService.GetByPacienteAsync(idPaciente);
@@ -60,7 +60,7 @@ public class CitasController : ControllerBase
     /// Obtiene todas las citas de un usuario (doctor) específico
     /// </summary>
     [HttpGet("usuario/{idUsuario:guid}")]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult<IEnumerable<CitaDto>>> GetByUsuario(Guid idUsuario)
     {
         var citas = await _citaService.GetByUsuarioAsync(idUsuario);
@@ -71,7 +71,7 @@ public class CitasController : ControllerBase
     /// Obtiene una cita por su ID
     /// </summary>
     [HttpGet("{id:guid}")]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult<CitaDetailDto>> GetById(Guid id)
     {
         var cita = await _citaService.GetByIdAsync(id);
@@ -82,7 +82,7 @@ public class CitasController : ControllerBase
     /// Crea una nueva cita
     /// </summary>
     [HttpPost]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult<CitaDto>> Create(CitaCreateDto citaDto)
     {
         // Obtener el ID del usuario actual desde el token
@@ -95,7 +95,7 @@ public class CitasController : ControllerBase
     /// Actualiza una cita existente
     /// </summary>
     [HttpPut]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult<CitaDto>> Update(CitaUpdateDto citaDto)
     {
         var citaActualizada = await _citaService.UpdateAsync(citaDto);
@@ -106,7 +106,7 @@ public class CitasController : ControllerBase
     /// Cancela una cita
     /// </summary>
     [HttpPatch("cancelar/{id:guid}")]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult> Cancel(Guid id)
     {
         await _citaService.CancelAsync(id);

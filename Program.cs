@@ -108,10 +108,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireAuthenticatedUser", policy => policy.RequireAuthenticatedUser());
     
     // Política para validar acceso a consultorio
-    options.AddPolicy("ConsultorioAccess", policy => policy.Requirements.Add(new ConsultorioAccessRequirement()));
-    
-    // Política para validar mismo consultorio (alias para compatibilidad)
-    options.AddPolicy("SameConsultorio", policy => policy.Requirements.Add(new ConsultorioAccessRequirement()));
+    options.AddPolicy("RequireConsultorioAccess", policy => policy.Requirements.Add(new ConsultorioAccessRequirement()));
 });
 
 // Registrar los manejadores de autorización personalizados

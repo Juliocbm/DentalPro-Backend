@@ -23,7 +23,7 @@ public class RecordatoriosController : ControllerBase
     /// Obtiene todos los recordatorios de una cita
     /// </summary>
     [HttpGet("cita/{idCita:guid}")]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult<IEnumerable<RecordatorioDto>>> GetByCita(Guid idCita)
     {
         var recordatorios = await _recordatorioService.GetByCitaAsync(idCita);
@@ -34,7 +34,7 @@ public class RecordatoriosController : ControllerBase
     /// Obtiene un recordatorio por su ID
     /// </summary>
     [HttpGet("{id:guid}")]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult<RecordatorioDto>> GetById(Guid id)
     {
         var recordatorio = await _recordatorioService.GetByIdAsync(id);
@@ -45,7 +45,7 @@ public class RecordatoriosController : ControllerBase
     /// Crea un nuevo recordatorio
     /// </summary>
     [HttpPost]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult<RecordatorioDto>> Create(RecordatorioCreateDto recordatorioDto)
     {
         var recordatorio = await _recordatorioService.CreateAsync(recordatorioDto);
@@ -56,7 +56,7 @@ public class RecordatoriosController : ControllerBase
     /// Actualiza un recordatorio existente
     /// </summary>
     [HttpPut]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult<RecordatorioDto>> Update(RecordatorioUpdateDto recordatorioDto)
     {
         var recordatorio = await _recordatorioService.UpdateAsync(recordatorioDto);
@@ -67,7 +67,7 @@ public class RecordatoriosController : ControllerBase
     /// Marca un recordatorio como enviado
     /// </summary>
     [HttpPatch("marcar-enviado/{id:guid}")]
-    [SameConsultorio]
+    [RequireConsultorioAccess]
     public async Task<ActionResult> MarkAsSent(Guid id)
     {
         await _recordatorioService.MarkAsSentAsync(id);
