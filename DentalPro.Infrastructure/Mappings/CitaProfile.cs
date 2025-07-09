@@ -28,7 +28,11 @@ public class CitaProfile : Profile
 
         // DTO -> Entity
         CreateMap<CitaCreateDto, Cita>()
-            .ForMember(dest => dest.IdCita, opt => opt.Ignore());
+            .ForMember(dest => dest.IdCita, opt => opt.Ignore()) // ID generado por la BD
+            .ForMember(dest => dest.Estatus, opt => opt.MapFrom(src => "Programada")) // Estado predeterminado
+            .ForMember(dest => dest.Recordatorios, opt => opt.Ignore()) // Colección de navegación
+            .ForMember(dest => dest.Paciente, opt => opt.Ignore()) // Propiedad de navegación
+            .ForMember(dest => dest.Usuario, opt => opt.Ignore()); // Propiedad de navegación
 
         CreateMap<CitaUpdateDto, Cita>();
     }

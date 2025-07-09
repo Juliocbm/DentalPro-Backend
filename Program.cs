@@ -1,7 +1,7 @@
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using DentalPro.Infrastructure;
-using DentalPro.Application.Common.Mappings;
+using DentalPro.Infrastructure.Mappings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using DentalPro.Api.Infrastructure.Authorization;
@@ -116,8 +116,9 @@ builder.Services.AddSingleton<IAuthorizationHandler, ConsultorioAccessHandler>()
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Registrar AutoMapper
-builder.Services.AddAutoMapper(typeof(MappingProfile));
+// Registrar AutoMapper con todos los perfiles del ensamblado de infraestructura
+// Esto registrará automáticamente CitaProfile, RecordatorioProfile, UsuarioProfile, RolProfile y PacienteProfile
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 // Registrar validadores específicos explícitamente
 builder.Services.AddScoped<IValidator<DentalPro.Application.DTOs.Auth.AuthLoginDto>, AuthLoginDtoValidator>();
