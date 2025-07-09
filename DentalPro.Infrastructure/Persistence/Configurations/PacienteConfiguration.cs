@@ -16,5 +16,10 @@ public class PacienteConfiguration : IEntityTypeConfiguration<Paciente>
         builder.Property(p => p.Apellidos).HasMaxLength(100);
         builder.Property(p => p.Telefono).HasMaxLength(20);
         builder.Property(p => p.Correo).HasMaxLength(100);
+        
+        // Configuración de la relación con Consultorio
+        builder.HasOne(p => p.Consultorio)
+               .WithMany(c => c.Pacientes)
+               .HasForeignKey(p => p.IdConsultorio);
     }
 }
