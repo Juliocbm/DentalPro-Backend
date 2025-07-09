@@ -44,7 +44,7 @@ namespace DentalPro.Infrastructure.Persistence
             modelBuilder.Entity<Usuario>()
                 .OwnsOne(u => u.DoctorDetail, builder => 
                 {
-                    builder.ToTable("DoctoresDetalles");
+                    builder.ToTable("DoctorDetalle", "seguridad");
                     
                     builder.Property(d => d.Especialidad)
                         .HasMaxLength(100)
