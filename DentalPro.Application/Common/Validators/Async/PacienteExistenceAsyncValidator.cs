@@ -1,6 +1,6 @@
 using DentalPro.Application.Interfaces.IRepositories;
 
-namespace DentalPro.Application.Validators.Common;
+namespace DentalPro.Application.Common.Validators.Async;
 
 /// <summary>
 /// Validador asíncrono para verificar la existencia de un paciente por su ID

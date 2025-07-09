@@ -1,6 +1,5 @@
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Application.Interfaces.IServices;
-using DentalPro.Application.Validators.Common;
 using DentalPro.Infrastructure.Persistence;
 using DentalPro.Infrastructure.Persistence.Repositories;
 using DentalPro.Infrastructure.Services;
@@ -8,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Caching.Memory;
+using DentalPro.Application.Common.Validators.Async;
 
 public static class DependencyInjection
 {

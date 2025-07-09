@@ -1,9 +1,9 @@
 using DentalPro.Application.Common.Constants;
+using DentalPro.Application.Common.Validators.Async;
 using DentalPro.Application.DTOs.Recordatorios;
-using DentalPro.Application.Validators.Common;
 using FluentValidation;
 
-namespace DentalPro.Application.DTOs.Recordatorios.Validators;
+namespace DentalPro.Application.Common.Validators.Recordatorios;
 
 public class RecordatorioUpdateDtoValidator : AbstractValidator<RecordatorioUpdateDto>
 {

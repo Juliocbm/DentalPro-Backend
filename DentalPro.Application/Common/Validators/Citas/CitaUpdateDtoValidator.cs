@@ -1,9 +1,9 @@
 using DentalPro.Application.Common.Constants;
+using DentalPro.Application.Common.Validators.Async;
 using DentalPro.Application.DTOs.Citas;
-using DentalPro.Application.Validators.Common;
 using FluentValidation;
 
-namespace DentalPro.Application.DTOs.Citas.Validators;
+namespace DentalPro.Application.Common.Validators.Citas;
 
 public class CitaUpdateDtoValidator : AbstractValidator<CitaUpdateDto>
 {
