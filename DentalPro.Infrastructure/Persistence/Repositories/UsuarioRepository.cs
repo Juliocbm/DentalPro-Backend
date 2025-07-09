@@ -1,6 +1,7 @@
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace DentalPro.Infrastructure.Persistence.Repositories;
 
@@ -135,5 +136,48 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
         usuario.Roles.Remove(rolUsuario);
         await _context.SaveChangesAsync();
         return true;
+    }
+    
+    // Implementación de métodos para gestión de refresh tokens
+    public async Task<RefreshToken> AddRefreshTokenAsync(RefreshToken refreshToken)
+    {
+        // Generar un identificador único si no se ha asignado ya
+        if (refreshToken.IdRefreshToken == Guid.Empty)
+            refreshToken.IdRefreshToken = Guid.NewGuid();
+            
+        if (refreshToken.FechaCreacion == default)
+            refreshToken.FechaCreacion = DateTime.UtcNow;
+            
+        await _context.Set<RefreshToken>().AddAsync(refreshToken);
+        await _context.SaveChangesAsync();
+        return refreshToken;
+    }
+    
+    public async Task<RefreshToken?> GetRefreshTokenByTokenAsync(string token)
+    {
+        return await _context.Set<RefreshToken>()
+            .FirstOrDefaultAsync(rt => rt.Token == token && !rt.EstaRevocado && rt.FechaExpiracion > DateTime.UtcNow);
+    }
+    
+    public async Task RevokeRefreshTokenAsync(RefreshToken refreshToken)
+    {
+        refreshToken.EstaRevocado = true;
+        _context.Set<RefreshToken>().Update(refreshToken);
+        await _context.SaveChangesAsync();
+    }
+    
+    public async Task RevokeAllRefreshTokensAsync(Guid idUsuario)
+    {
+        var tokens = await _context.Set<RefreshToken>()
+            .Where(rt => rt.IdUsuario == idUsuario && !rt.EstaRevocado)
+            .ToListAsync();
+            
+        foreach (var token in tokens)
+        {
+            token.EstaRevocado = true;
+        }
+        
+        _context.Set<RefreshToken>().UpdateRange(tokens);
+        await _context.SaveChangesAsync();
     }
 }

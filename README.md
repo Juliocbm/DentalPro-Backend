@@ -10,6 +10,36 @@ La API utiliza JWT (JSON Web Tokens) para la autenticación. Los endpoints para 
 
 - `POST /api/Auth/login`: Para iniciar sesión con credenciales
 - `POST /api/Auth/register`: Para registrar nuevos usuarios
+- `POST /api/Auth/refresh-token`: Para renovar un token JWT usando un refresh token
+- `POST /api/Auth/revoke-token`: Para revocar un refresh token (requiere autenticación)
+
+#### Sistema de Refresh Tokens
+
+Se implementó un sistema completo de refresh tokens para mejorar la seguridad y experiencia de usuario:
+
+- **Access Token JWT**: Token de corta duración (30 minutos por defecto) para acceder a recursos protegidos
+- **Refresh Token**: Token de larga duración (7 días por defecto) almacenado en base de datos
+- **Renovación segura**: Al expirar el access token, el cliente puede usar el refresh token para obtener nuevos tokens sin solicitar credenciales
+- **Revocación de tokens**: Los tokens pueden ser revocados manualmente o automáticamente al iniciar sesión
+- **Seguridad mejorada**: Tokens de acceso de corta vida y capacidad de invalidar sesiones
+- **Validación estricta de expiración**: Se implementó configuración especial (`ClockSkew = TimeSpan.Zero`) para garantizar que los tokens expiren exactamente en el tiempo configurado
+
+Los tiempos de expiración son configurables en el archivo `appsettings.json`:
+
+```json
+"Jwt": {
+  "AccessTokenDurationMinutes": 30,
+  "RefreshTokenDurationDays": 7
+}
+```
+
+#### Flujo completo de autenticación
+
+1. **Login**: El usuario se autentica y recibe un access token y un refresh token
+2. **Acceso a recursos**: El cliente usa el access token para acceder a recursos protegidos
+3. **Expiración**: Cuando el access token expira (exactamente después del tiempo configurado)
+4. **Renovación**: El cliente envía el refresh token para obtener un nuevo par de tokens
+5. **Logout**: El cliente puede revocar explícitamente el refresh token al cerrar sesión
 
 ### Autorización basada en Políticas
 

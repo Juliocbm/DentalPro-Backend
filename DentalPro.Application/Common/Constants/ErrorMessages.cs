@@ -14,6 +14,9 @@ public static class ErrorMessages
     public const string UserNotActive = "El usuario no está activo.";
     public const string UserLocked = "La cuenta de usuario está bloqueada.";
     public const string TokenExpired = "El token ha expirado.";
+    public const string InvalidRefreshToken = "El token de refresco es inválido o ha expirado.";
+    public const string TokenRevoked = "El token de refresco ha sido revocado.";
+    public const string RefreshTokenRequired = "Se requiere un token de refresco válido.";
     
     // Mensajes de autorización
     public const string UnauthorizedAccess = "No está autorizado para realizar esta operación.";

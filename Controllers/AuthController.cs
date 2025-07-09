@@ -2,6 +2,7 @@ using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.DTOs.Auth;
 using DentalPro.Application.Interfaces.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DentalPro.Api.Controllers;
@@ -37,5 +38,20 @@ public class AuthController : ControllerBase
             throw new BadRequestException("No se pudo registrar el usuario");
         }
         return Ok(result);
+    }
+    
+    [HttpPost("refresh-token")]
+    public async Task<ActionResult<AuthLoginResponseDto>> RefreshToken([FromBody] AuthRefreshTokenDto request)
+    {
+        var result = await _authService.RefreshTokenAsync(request);
+        return Ok(result);
+    }
+    
+    [HttpPost("revoke-token")]
+    [Authorize(Policy = "RequireAuthenticatedUser")]
+    public async Task<IActionResult> RevokeToken([FromBody] AuthRefreshTokenDto request)
+    {
+        await _authService.RevokeTokenAsync(request.RefreshToken);
+        return NoContent();
     }
 }
