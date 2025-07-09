@@ -42,7 +42,7 @@ public class UsuarioUpdateDtoValidator : AbstractValidator<UsuarioUpdateDto>
             .NotEqual(Guid.Empty).WithMessage("El ID del rol no puede estar vacío")
             .When(x => x.RolIds != null)
             // Validación asincrónica: Verificar que cada rol exista en la base de datos por ID
-            .MustExistInDatabase(rolService)
+            .SetAsyncValidator(new RolExistenceByIdAsyncValidator<UsuarioUpdateDto>(rolService))
                 .WithMessage("El rol con ID '{PropertyValue}' no existe en el sistema");
     }
 }

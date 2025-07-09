@@ -23,7 +23,7 @@ namespace DentalPro.Application.Common.Mappings
             CreateMap<UsuarioUpdateDto, Usuario>();
             
             // Relación Usuario-Rol
-            CreateMap<UsuarioRol, RolInfoDto>()
+            CreateMap<UsuarioRol, RolDetailDto>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.IdRol))
                 .ForMember(dest => dest.Nombre, opt => opt.MapFrom(src => src.Rol != null ? src.Rol.Nombre : string.Empty));
             

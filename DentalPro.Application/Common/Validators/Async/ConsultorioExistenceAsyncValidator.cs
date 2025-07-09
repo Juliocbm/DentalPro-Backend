@@ -11,21 +11,19 @@ namespace DentalPro.Application.Common.Validators.Async
     /// Validador asincrónico para verificar la existencia de un consultorio
     /// </summary>
     /// <typeparam name="T">Tipo del objeto que se está validando</typeparam>
-    public class ConsultorioExistsValidator<T> : AsyncPropertyValidator<T, Guid>
+    public class ConsultorioExistenceAsyncValidator<T> : AsyncPropertyValidator<T, Guid>
     {
         private readonly IConsultorioService _consultorioService;
 
-        public ConsultorioExistsValidator(IConsultorioService consultorioService) 
+        public ConsultorioExistenceAsyncValidator(IConsultorioService consultorioService) 
         {
             _consultorioService = consultorioService;
         }
         
-        public override string Name => "ConsultorioExistsValidator";
+        public override string Name => "ConsultorioExistenceAsyncValidator";
 
         protected override string GetDefaultMessageTemplate(string errorCode)
             => "El consultorio con ID '{PropertyValue}' no existe en el sistema";
-
-
 
         /// <summary>
         /// Verifica de forma asincrónica si el consultorio existe en la base de datos
@@ -55,7 +53,7 @@ namespace DentalPro.Application.Common.Validators.Async
             this IRuleBuilder<T, Guid> ruleBuilder,
             IConsultorioService consultorioService)
         {
-            return ruleBuilder.SetAsyncValidator(new ConsultorioExistsValidator<T>(consultorioService));
+            return ruleBuilder.SetAsyncValidator(new ConsultorioExistenceAsyncValidator<T>(consultorioService));
         }
     }
 }

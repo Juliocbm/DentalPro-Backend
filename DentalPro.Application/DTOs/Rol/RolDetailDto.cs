@@ -3,9 +3,9 @@ using System;
 namespace DentalPro.Application.DTOs.Rol
 {
     /// <summary>
-    /// DTO que contiene información básica de un rol (ID y nombre)
+    /// DTO que contiene información detallada de un rol (ID y nombre)
     /// </summary>
-    public class RolInfoDto
+    public class RolDetailDto
     {
         /// <summary>
         /// Identificador único del rol

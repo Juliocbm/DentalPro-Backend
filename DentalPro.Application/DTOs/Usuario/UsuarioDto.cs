@@ -16,7 +16,7 @@ public class UsuarioDto
     /// <summary>
     /// Lista de roles con información completa (ID y nombre)
     /// </summary>
-    public List<RolInfoDto> Roles { get; set; } = new();
+    public List<RolDetailDto> Roles { get; set; } = new();
     
     // DEPRECATED: Para mantener compatibilidad con el frontend existente
     // Será removido en futuras versiones

@@ -43,7 +43,7 @@ public class UsuarioCreateDtoValidator : AbstractValidator<UsuarioCreateDto>
         RuleFor(x => x.IdConsultorio)
             .NotEmpty().WithMessage("El ID del consultorio es requerido")
             // Validación asincrónica: Verificar que el consultorio exista en la base de datos
-            .MustExistInDatabase(consultorioService)
+            .SetAsyncValidator(new ConsultorioExistenceAsyncValidator<UsuarioCreateDto>(consultorioService))
                 .WithMessage("El consultorio seleccionado no existe en el sistema");
 
         RuleFor(x => x.RolIds)
@@ -55,7 +55,7 @@ public class UsuarioCreateDtoValidator : AbstractValidator<UsuarioCreateDto>
             .NotEqual(Guid.Empty).WithMessage("El ID del rol no puede estar vacío")
             .When(x => x.RolIds != null)
             // Validación asincrónica: Verificar que cada rol exista en la base de datos por ID
-            .MustExistInDatabase(rolService)
+            .SetAsyncValidator(new RolExistenceByIdAsyncValidator<UsuarioCreateDto>(rolService))
                 .WithMessage("El rol con ID '{PropertyValue}' no existe en el sistema");
     }
 
