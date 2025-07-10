@@ -23,6 +23,7 @@ public class CitaDetailDto
     public Guid IdDoctor { get; set; }
     public string NombreCompletoDoctor { get; set; } = null!;
     public string EmailDoctor { get; set; } = null!;
+    public string? Especialidad { get; set; }
     
     // Información adicional
     public int DuracionMinutos { get; set; }

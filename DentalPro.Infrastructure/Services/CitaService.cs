@@ -1,6 +1,7 @@
 using AutoMapper;
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
+using DentalPro.Application.Common.Permissions;
 using DentalPro.Application.DTOs.Citas;
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Application.Interfaces.IServices;
@@ -42,12 +43,28 @@ public class CitaService : ICitaService
 
     public async Task<IEnumerable<CitaDto>> GetAllAsync()
     {
+        // Verificar si el usuario tiene permiso para ver todas las citas
+        var hasPermiso = await _currentUserService.HasPermisoAsync(CitasPermissions.ViewAll);
+        if (!hasPermiso)
+        {
+            _logger.LogWarning("Intento de acceso no autorizado a todas las citas");
+            throw new ForbiddenAccessException("No tiene permiso para ver todas las citas");
+        }
+        
         var citas = await _citaRepository.GetAllAsync();
         return _mapper.Map<IEnumerable<CitaDto>>(citas);
     }
 
     public async Task<IEnumerable<CitaDto>> GetByDateRangeAsync(DateTime fechaInicio, DateTime fechaFin)
     {
+        // Verificar si el usuario tiene permiso para ver citas
+        var hasPermiso = await _currentUserService.HasPermisoAsync(CitasPermissions.View);
+        if (!hasPermiso)
+        {
+            _logger.LogWarning("Intento de acceso no autorizado a citas por rango de fechas");
+            throw new ForbiddenAccessException("No tiene permiso para ver citas");
+        }
+        
         // Obtenemos el ID del consultorio del usuario actual usando el nuevo servicio
         var idConsultorio = _currentUserService.GetCurrentConsultorioId();
         var citas = await _citaRepository.GetByDateRangeAsync(fechaInicio, fechaFin, idConsultorio);
@@ -56,6 +73,14 @@ public class CitaService : ICitaService
 
     public async Task<IEnumerable<CitaDto>> GetByPacienteAsync(Guid idPaciente)
     {
+        // Verificar si el usuario tiene permiso para ver citas de pacientes
+        var hasPermiso = await _currentUserService.HasPermisoAsync(CitasPermissions.ViewByPaciente);
+        if (!hasPermiso)
+        {
+            _logger.LogWarning("Intento de acceso no autorizado a citas de un paciente");
+            throw new ForbiddenAccessException("No tiene permiso para ver citas de pacientes");
+        }
+        
         var paciente = await _pacienteRepository.GetByIdAsync(idPaciente);
         if (paciente == null)
         {
@@ -68,6 +93,14 @@ public class CitaService : ICitaService
 
     public async Task<IEnumerable<CitaDto>> GetByDoctorAsync(Guid idDoctor)
     {
+        // Verificar si el usuario tiene permiso para ver citas de doctores
+        var hasPermiso = await _currentUserService.HasPermisoAsync(CitasPermissions.ViewByDoctor);
+        if (!hasPermiso)
+        {
+            _logger.LogWarning("Intento de acceso no autorizado a citas de un doctor");
+            throw new ForbiddenAccessException("No tiene permiso para ver citas de doctores");
+        }
+        
         // Verificar que el usuario exista
         var doctor = await _usuarioRepository.GetByIdAsync(idDoctor);
         if (doctor == null)
@@ -75,7 +108,8 @@ public class CitaService : ICitaService
             throw new NotFoundException(ErrorMessages.UsuarioNotFound, ErrorCodes.UsuarioNotFound);
         }
         
-        // Verificar que el usuario sea un doctor
+        // Verificar que el usuario sea un doctor usando DoctorDetail
+        var doctorDetail = await _doctorRepository.GetDoctorDetailByIdAsync(idDoctor);
         var esDoctor = await _doctorRepository.IsUserDoctorAsync(idDoctor);
         if (!esDoctor)
         {
@@ -88,6 +122,14 @@ public class CitaService : ICitaService
 
     public async Task<CitaDetailDto> GetByIdAsync(Guid id)
     {
+        // Verificar si el usuario tiene permiso para ver citas
+        var hasPermiso = await _currentUserService.HasPermisoAsync(CitasPermissions.View);
+        if (!hasPermiso)
+        {
+            _logger.LogWarning("Intento de acceso no autorizado a detalle de cita");
+            throw new ForbiddenAccessException("No tiene permiso para ver detalles de citas");
+        }
+        
         var cita = await _citaRepository.GetByIdAsync(id);
         if (cita == null)
         {
@@ -102,23 +144,39 @@ public class CitaService : ICitaService
         // Verificamos si tiene recordatorios
         citaDetailDto.TieneRecordatorios = cita.Recordatorios.Any();
         
+        // Si el doctor tiene detalles adicionales, los incluimos
+        var doctorDetail = await _doctorRepository.GetDoctorDetailByIdAsync(cita.IdDoctor);
+        if (doctorDetail != null)
+        {
+            citaDetailDto.Especialidad = doctorDetail.Especialidad;
+        }
+        
         return citaDetailDto;
     }
 
     public async Task<CitaDto> CreateAsync(CitaCreateDto citaDto, Guid idUsuarioActual)
     {
-        // Verificar si existe el paciente
-        var paciente = await _pacienteRepository.GetByIdAsync(citaDto.IdPaciente);
-        if (paciente == null)
+        // Verificar si el usuario tiene permiso para crear citas
+        var hasPermiso = await _currentUserService.HasPermisoAsync(CitasPermissions.Create);
+        if (!hasPermiso)
         {
-            throw new NotFoundException(ErrorMessages.PacienteNotFound, ErrorCodes.PacienteNotFound);
+            _logger.LogWarning("Intento de creación no autorizada de cita");
+            throw new ForbiddenAccessException("No tiene permiso para crear citas");
         }
         
-        // Verificar que el usuario asignado sea un doctor
+        // Verificar si existe el doctor
+        var doctor = await _usuarioRepository.GetByIdAsync(citaDto.IdDoctor);
+        if (doctor == null)
+        {
+            throw new NotFoundException(ErrorMessages.UsuarioNotFound, ErrorCodes.UsuarioNotFound);
+        }
+        
+        // Verificar que el usuario sea un doctor y obtener sus detalles
+        var doctorDetail = await _doctorRepository.GetDoctorDetailByIdAsync(citaDto.IdDoctor);
         var esDoctor = await _doctorRepository.IsUserDoctorAsync(citaDto.IdDoctor);
         if (!esDoctor)
         {
-            throw new ValidationException(
+            throw new BadRequestException(
                 "Solo se pueden agendar citas a usuarios con rol de Doctor", 
                 ErrorCodes.InvalidOperation);
         }
@@ -154,6 +212,14 @@ public class CitaService : ICitaService
 
     public async Task<CitaDto> UpdateAsync(CitaUpdateDto citaDto)
     {
+        // Verificar si el usuario tiene permiso para actualizar citas
+        var hasPermiso = await _currentUserService.HasPermisoAsync(CitasPermissions.Update);
+        if (!hasPermiso)
+        {
+            _logger.LogWarning("Intento de actualización no autorizada de cita");
+            throw new ForbiddenAccessException("No tiene permiso para actualizar citas");
+        }
+        
         // Verificar si existe la cita
         var citaExistente = await _citaRepository.GetByIdAsync(citaDto.IdCita);
         if (citaExistente == null)
@@ -170,6 +236,7 @@ public class CitaService : ICitaService
         // Verificar que el usuario asignado sea un doctor
         if (citaDto.IdDoctor != citaExistente.IdDoctor)
         {
+            var doctorDetail = await _doctorRepository.GetDoctorDetailByIdAsync(citaDto.IdDoctor);
             var esDoctor = await _doctorRepository.IsUserDoctorAsync(citaDto.IdDoctor);
             if (!esDoctor)
             {
@@ -215,6 +282,14 @@ public class CitaService : ICitaService
 
     public async Task CancelAsync(Guid id)
     {
+        // Verificar si el usuario tiene permiso para cancelar citas
+        var hasPermiso = await _currentUserService.HasPermisoAsync(CitasPermissions.Cancel);
+        if (!hasPermiso)
+        {
+            _logger.LogWarning("Intento de cancelación no autorizada de cita");
+            throw new ForbiddenAccessException("No tiene permiso para cancelar citas");
+        }
+        
         var cita = await _citaRepository.GetByIdAsync(id);
         if (cita == null)
         {
@@ -227,6 +302,14 @@ public class CitaService : ICitaService
 
     public async Task DeleteAsync(Guid id)
     {
+        // Verificar si el usuario tiene permiso para eliminar citas
+        var hasPermiso = await _currentUserService.HasPermisoAsync(CitasPermissions.Delete);
+        if (!hasPermiso)
+        {
+            _logger.LogWarning("Intento de eliminación no autorizada de cita");
+            throw new ForbiddenAccessException("No tiene permiso para eliminar citas");
+        }
+        
         var cita = await _citaRepository.GetByIdAsync(id);
         if (cita == null)
         {
