@@ -180,4 +180,12 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
         _context.Set<RefreshToken>().UpdateRange(tokens);
         await _context.SaveChangesAsync();
     }
+    
+    public async Task<Usuario?> GetByIdWithRolesAsync(Guid idUsuario)
+    {
+        return await _dbSet
+            .Include(u => u.Roles)
+                .ThenInclude(r => r.Rol)
+            .FirstOrDefaultAsync(u => u.IdUsuario == idUsuario);
+    }
 }

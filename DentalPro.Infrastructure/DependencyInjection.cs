@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IRolRepository, RolRepository>();
+        services.AddScoped<IPermisoRepository, PermisoRepository>();
         services.AddScoped<IConsultorioRepository, ConsultorioRepository>();
         services.AddScoped<ICitaRepository, CitaRepository>();
         services.AddScoped<IRecordatorioRepository, RecordatorioRepository>();
@@ -35,15 +36,18 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<IRolService, RolService>();
+        services.AddScoped<IPermisoService, PermisoService>();
         services.AddScoped<IConsultorioService, ConsultorioService>();
         services.AddScoped<ICitaService, CitaService>();
         services.AddScoped<IRecordatorioService, RecordatorioService>();
-        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>(); 
         
         // Registrar validadores asíncronos
         services.AddScoped<PacienteExistenceAsyncValidator>();
         services.AddScoped<CitaExistenceAsyncValidator>();
         services.AddScoped<RecordatorioExistenceAsyncValidator>();
+        // Los validadores genéricos no necesitan ser registrados directamente
+        // ya que se crean mediante factory methods en los validadores de DTOs
         
         return services;
     }

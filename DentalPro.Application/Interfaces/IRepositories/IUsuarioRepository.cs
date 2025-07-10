@@ -11,6 +11,7 @@ public interface IUsuarioRepository : IGenericRepository<Usuario>
     Task<bool> RemoverRolAsync(Guid idUsuario, string rolNombre);
     Task<bool> AsignarRolPorIdAsync(Guid idUsuario, Guid idRol);
     Task<bool> RemoverRolPorIdAsync(Guid idUsuario, Guid idRol);
+    Task<Usuario?> GetByIdWithRolesAsync(Guid idUsuario);
     
     // Métodos para gestión de refresh tokens
     Task<RefreshToken> AddRefreshTokenAsync(RefreshToken refreshToken);
