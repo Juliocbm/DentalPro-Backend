@@ -2,7 +2,7 @@ using DentalPro.Application.DTOs.Rol;
 using DentalPro.Application.Interfaces.IServices;
 using FluentValidation;
 
-namespace DentalPro.Application.Validators.Rol;
+namespace DentalPro.Application.Common.Validators.Roles;
 
 /// <summary>
 /// Validador para el DTO de asignación/remoción de permisos a roles
@@ -56,8 +56,8 @@ public class RolPermisosDtoValidator : AbstractValidator<RolPermisosDto>
         // Al menos uno de los dos campos debe tener valores
         RuleFor(x => x)
             .Must(dto => 
-                (dto.PermisoIds != null && dto.PermisoIds.Count > 0) || 
-                (dto.PermisoNombres != null && dto.PermisoNombres.Count > 0))
+                dto.PermisoIds != null && dto.PermisoIds.Count > 0 || 
+                dto.PermisoNombres != null && dto.PermisoNombres.Count > 0)
             .WithMessage("Debe proporcionar al menos un permiso (ya sea por ID o por nombre)");
     }
 }

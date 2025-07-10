@@ -3,7 +3,7 @@ using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Application.Interfaces.IServices;
 using FluentValidation;
 
-namespace DentalPro.Application.Validators.Usuario;
+namespace DentalPro.Application.Common.Validators.Usuarios;
 
 public class UsuarioPermisosDtoValidator : AbstractValidator<UsuarioPermisosDto>
 {
@@ -49,8 +49,8 @@ public class UsuarioPermisosDtoValidator : AbstractValidator<UsuarioPermisosDto>
         // Al menos uno de los dos campos debe tener valores
         RuleFor(x => x)
             .Must(dto => 
-                (dto.PermisoIds != null && dto.PermisoIds.Count > 0) || 
-                (dto.PermisoNombres != null && dto.PermisoNombres.Count > 0))
+                dto.PermisoIds != null && dto.PermisoIds.Count > 0 || 
+                dto.PermisoNombres != null && dto.PermisoNombres.Count > 0)
             .WithMessage("Debe proporcionar al menos un permiso (ya sea por ID o por nombre)");
     }
 }
