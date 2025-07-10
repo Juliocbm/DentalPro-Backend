@@ -210,14 +210,15 @@ public class PermisoService : IPermisoService
             throw new NotFoundException("Permiso", idPermiso);
         }
 
-        var result = await _permisoRepository.AsignarPermisosARolAsync(idRol, new[] { idPermiso });
+        var result = await _permisoRepository.AsignarPermisoARolAsync(idRol, idPermiso);
         if (!result)
         {
             throw new BadRequestException($"No se pudo asignar el permiso {permiso.Nombre} al rol {rol.Nombre}");
         }
 
         // Invalidar caché relacionada
-        InvalidateRolPermisosCacheAsync(idRol).GetAwaiter().GetResult();
+        await InvalidateRolPermisosCacheAsync(idRol);
+        await InvalidateUsuariosCacheByRolIdAsync(idRol);
     }
 
     /// <summary>
@@ -236,7 +237,8 @@ public class PermisoService : IPermisoService
             return; // No hay nada que asignar
         }
 
-        // Verificar que todos los permisos existen
+        // Verificar que todos los permisos existan
+        var permisosExistentes = new List<Permiso>();
         foreach (var idPermiso in idPermisos)
         {
             var permiso = await _permisoRepository.GetByIdAsync(idPermiso);
@@ -244,6 +246,7 @@ public class PermisoService : IPermisoService
             {
                 throw new NotFoundException("Permiso", idPermiso);
             }
+            permisosExistentes.Add(permiso);
         }
 
         var result = await _permisoRepository.AsignarPermisosARolAsync(idRol, idPermisos);
@@ -254,6 +257,7 @@ public class PermisoService : IPermisoService
 
         // Invalidar caché relacionada
         await InvalidateRolPermisosCacheAsync(idRol);
+        await InvalidateUsuariosCacheByRolIdAsync(idRol);
     }
 
     /// <summary>
@@ -273,7 +277,7 @@ public class PermisoService : IPermisoService
             throw new NotFoundException("Permiso", idPermiso);
         }
 
-        var result = await _permisoRepository.RemoverPermisosDeRolAsync(idRol, new[] { idPermiso });
+        var result = await _permisoRepository.RemoverPermisoDeRolAsync(idRol, idPermiso);
         if (!result)
         {
             throw new BadRequestException($"No se pudo remover el permiso {permiso.Nombre} del rol {rol.Nombre}");
@@ -281,6 +285,7 @@ public class PermisoService : IPermisoService
 
         // Invalidar caché relacionada
         await InvalidateRolPermisosCacheAsync(idRol);
+        await InvalidateUsuariosCacheByRolIdAsync(idRol);
     }
 
     /// <summary>
@@ -307,6 +312,7 @@ public class PermisoService : IPermisoService
 
         // Invalidar caché relacionada
         await InvalidateRolPermisosCacheAsync(idRol);
+        await InvalidateUsuariosCacheByRolIdAsync(idRol);
     }
 
     /// <summary>
@@ -324,8 +330,9 @@ public class PermisoService : IPermisoService
         var createdPermiso = await _permisoRepository.AddAsync(permiso);
         await _permisoRepository.SaveChangesAsync();
 
-        // Invalidar caché
-        await InvalidateAllPermisosCacheAsync();
+        // Invalidar solo la caché global de permisos
+        // No es necesario invalidar otras cachés ya que este permiso no está asignado a ningún rol o usuario aún
+        _memoryCache.Remove(CACHE_KEY_PERMISOS_ALL);
 
         return createdPermiso;
     }
@@ -339,8 +346,16 @@ public class PermisoService : IPermisoService
         await _permisoRepository.UpdateAsync(permiso);
         await _permisoRepository.SaveChangesAsync();
 
-        // Invalidar caché
-        await InvalidateAllPermisosCacheAsync();
+        // Invalidar caché de manera selectiva
+        _memoryCache.Remove(CACHE_KEY_PERMISOS_ALL);
+        
+        // Obtener roles afectados por este permiso
+        var rolesAfectados = await _permisoRepository.GetRolesByPermisoIdAsync(permiso.IdPermiso);
+        foreach (var rol in rolesAfectados)
+        {
+            await InvalidateRolPermisosCacheAsync(rol.IdRol);
+            await InvalidateUsuariosCacheByRolIdAsync(rol.IdRol);
+        }
 
         return permiso;
     }
@@ -361,12 +376,22 @@ public class PermisoService : IPermisoService
         {
             throw new ForbiddenAccessException("No se pueden eliminar permisos predeterminados del sistema");
         }
+        
+        // Obtener roles afectados antes de eliminar el permiso
+        var rolesAfectados = await _permisoRepository.GetRolesByPermisoIdAsync(idPermiso);
 
         await _permisoRepository.RemoveAsync(permiso);
         await _permisoRepository.SaveChangesAsync();
 
-        // Invalidar caché
-        await InvalidateAllPermisosCacheAsync();
+        // Invalidar caché de manera selectiva
+        _memoryCache.Remove(CACHE_KEY_PERMISOS_ALL);
+        
+        // Invalidar caché de roles y usuarios afectados
+        foreach (var rol in rolesAfectados)
+        {
+            await InvalidateRolPermisosCacheAsync(rol.IdRol);
+            await InvalidateUsuariosCacheByRolIdAsync(rol.IdRol);
+        }
     }
 
     /// <summary>
@@ -378,6 +403,23 @@ public class PermisoService : IPermisoService
         _memoryCache.Remove(cacheKey);
         _logger.LogDebug("Caché de permisos invalidada para usuario {IdUsuario}", idUsuario);
         return Task.CompletedTask;
+    }
+    
+    /// <summary>
+    /// Invalida la caché de permisos para todos los usuarios que tienen un rol específico
+    /// </summary>
+    public async Task InvalidateUsuariosCacheByRolIdAsync(Guid idRol)
+    {
+        // Obtener todos los usuarios que tienen este rol
+        var usuarios = await _usuarioRepository.GetUsuariosByRolIdAsync(idRol);
+        
+        // Invalidar caché para cada usuario
+        foreach (var usuario in usuarios)
+        {
+            await InvalidateUsuarioPermisosCacheAsync(usuario.IdUsuario);
+        }
+        
+        _logger.LogDebug("Caché de permisos invalidada para {Count} usuarios con rol {IdRol}", usuarios.Count(), idRol);
     }
 
     /// <summary>

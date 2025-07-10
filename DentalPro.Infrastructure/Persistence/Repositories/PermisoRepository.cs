@@ -38,7 +38,46 @@ public class PermisoRepository : GenericRepository<Permiso>, IPermisoRepository
     }
 
     /// <summary>
-    /// Asigna permisos a un rol
+    /// Asigna un permiso a un rol
+    /// </summary>
+    public async Task<bool> AsignarPermisoARolAsync(Guid rolId, Guid permisoId)
+    {
+        try
+        {
+            // Verificar si el rol existe
+            var rol = await _context.Set<Rol>().FindAsync(rolId);
+            if (rol == null) return false;
+
+            // Verificar si el permiso existe
+            var permiso = await GetByIdAsync(permisoId);
+            if (permiso == null) return false;
+
+            // Verificar si la relación ya existe
+            bool relacionExiste = await _context.Set<RolPermiso>()
+                .AnyAsync(rp => rp.IdRol == rolId && rp.IdPermiso == permisoId);
+
+            // Si ya existe la relación, retornamos true (ya está asignado)
+            if (relacionExiste) return true;
+
+            // Crear la nueva asignación rol-permiso
+            await _context.Set<RolPermiso>().AddAsync(new RolPermiso
+            {
+                IdRol = rolId,
+                IdPermiso = permisoId
+            });
+
+            // Guardar cambios
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Asigna varios permisos a un rol
     /// </summary>
     public async Task<bool> AsignarPermisosARolAsync(Guid rolId, IEnumerable<Guid> permisoIds)
     {
@@ -81,7 +120,38 @@ public class PermisoRepository : GenericRepository<Permiso>, IPermisoRepository
     }
 
     /// <summary>
-    /// Remueve permisos de un rol
+    /// Remueve un permiso de un rol
+    /// </summary>
+    public async Task<bool> RemoverPermisoDeRolAsync(Guid rolId, Guid permisoId)
+    {
+        try
+        {
+            // Verificar si el rol existe
+            var rol = await _context.Set<Rol>().FindAsync(rolId);
+            if (rol == null) return false;
+
+            // Buscar la relación rol-permiso específica
+            var relacion = await _context.Set<RolPermiso>()
+                .FirstOrDefaultAsync(rp => rp.IdRol == rolId && rp.IdPermiso == permisoId);
+
+            // Si no existe la relación, retornamos true (ya no está asignado)
+            if (relacion == null) return true;
+
+            // Remover la relación
+            _context.Set<RolPermiso>().Remove(relacion);
+
+            // Guardar cambios
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Remueve varios permisos de un rol
     /// </summary>
     public async Task<bool> RemoverPermisosDeRolAsync(Guid rolId, IEnumerable<Guid> permisoIds)
     {
@@ -110,6 +180,18 @@ public class PermisoRepository : GenericRepository<Permiso>, IPermisoRepository
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Obtiene los roles que tienen asignado un permiso específico
+    /// </summary>
+    public async Task<IEnumerable<Rol>> GetRolesByPermisoIdAsync(Guid permisoId)
+    {
+        return await _context.Set<RolPermiso>()
+            .Where(rp => rp.IdPermiso == permisoId)
+            .Include(rp => rp.Rol)
+            .Select(rp => rp.Rol)
+            .ToListAsync();
     }
 
     /// <summary>

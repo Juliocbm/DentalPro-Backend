@@ -25,7 +25,15 @@ namespace DentalPro.Application.Interfaces.IRepositories
         Task<IEnumerable<Permiso>> GetByRolIdAsync(Guid rolId);
 
         /// <summary>
-        /// Asigna permisos a un rol
+        /// Asigna un permiso a un rol
+        /// </summary>
+        /// <param name="rolId">ID del rol</param>
+        /// <param name="permisoId">ID del permiso a asignar</param>
+        /// <returns>True si se asignó correctamente, False si no</returns>
+        Task<bool> AsignarPermisoARolAsync(Guid rolId, Guid permisoId);
+
+        /// <summary>
+        /// Asigna varios permisos a un rol
         /// </summary>
         /// <param name="rolId">ID del rol</param>
         /// <param name="permisoIds">Lista de IDs de permisos a asignar</param>
@@ -33,11 +41,26 @@ namespace DentalPro.Application.Interfaces.IRepositories
         Task<bool> AsignarPermisosARolAsync(Guid rolId, IEnumerable<Guid> permisoIds);
 
         /// <summary>
-        /// Remueve permisos de un rol
+        /// Remueve un permiso de un rol
+        /// </summary>
+        /// <param name="rolId">ID del rol</param>
+        /// <param name="permisoId">ID del permiso a remover</param>
+        /// <returns>True si se removió correctamente, False si no</returns>
+        Task<bool> RemoverPermisoDeRolAsync(Guid rolId, Guid permisoId);
+
+        /// <summary>
+        /// Remueve varios permisos de un rol
         /// </summary>
         /// <param name="rolId">ID del rol</param>
         /// <param name="permisoIds">Lista de IDs de permisos a remover</param>
         /// <returns>True si se removieron correctamente, False si no</returns>
         Task<bool> RemoverPermisosDeRolAsync(Guid rolId, IEnumerable<Guid> permisoIds);
+
+        /// <summary>
+        /// Obtiene los roles que tienen asignado un permiso específico
+        /// </summary>
+        /// <param name="permisoId">ID del permiso</param>
+        /// <returns>Lista de roles que tienen asignado el permiso</returns>
+        Task<IEnumerable<Rol>> GetRolesByPermisoIdAsync(Guid permisoId);
     }
 }
