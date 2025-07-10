@@ -106,7 +106,7 @@ public class PermisoService : IPermisoService
     /// <summary>
     /// Obtiene todos los permisos asignados a un rol por su nombre
     /// </summary>
-    public async Task<IEnumerable<Permiso>> GetPermisosByRolNombreAsync(string nombreRol)
+    public async Task<IEnumerable<Permiso>> GetPermisosByRolNameAsync(string nombreRol)
     {
         var rol = await _rolRepository.GetByNombreAsync(nombreRol);
         if (rol == null)
@@ -160,7 +160,7 @@ public class PermisoService : IPermisoService
     /// <summary>
     /// Verifica si un usuario tiene un permiso específico por nombre de permiso
     /// </summary>
-    public async Task<bool> HasUsuarioPermisoAsync(Guid idUsuario, string nombrePermiso)
+    public async Task<bool> HasUsuarioPermisoByNameAsync(Guid idUsuario, string nombrePermiso)
     {
         var permisos = await GetPermisosByUsuarioIdAsync(idUsuario);
         return permisos.Any(p => p.Nombre.Equals(nombrePermiso, StringComparison.OrdinalIgnoreCase));
@@ -169,7 +169,7 @@ public class PermisoService : IPermisoService
     /// <summary>
     /// Verifica si un usuario tiene un permiso específico por ID de permiso
     /// </summary>
-    public async Task<bool> HasUsuarioPermisoAsync(Guid idUsuario, Guid idPermiso)
+    public async Task<bool> HasUsuarioPermisoByIdAsync(Guid idUsuario, Guid idPermiso)
     {
         var permisos = await GetPermisosByUsuarioIdAsync(idUsuario);
         return permisos.Any(p => p.IdPermiso == idPermiso);
@@ -178,7 +178,7 @@ public class PermisoService : IPermisoService
     /// <summary>
     /// Verifica si un rol tiene un permiso específico por nombre de permiso
     /// </summary>
-    public async Task<bool> HasRolPermisoAsync(Guid idRol, string nombrePermiso)
+    public async Task<bool> HasRolPermisoByNameAsync(Guid idRol, string nombrePermiso)
     {
         var permisos = await GetPermisosByRolIdAsync(idRol);
         return permisos.Any(p => p.Nombre.Equals(nombrePermiso, StringComparison.OrdinalIgnoreCase));
@@ -187,7 +187,7 @@ public class PermisoService : IPermisoService
     /// <summary>
     /// Verifica si un rol tiene un permiso específico por ID de permiso
     /// </summary>
-    public async Task<bool> HasRolPermisoAsync(Guid idRol, Guid idPermiso)
+    public async Task<bool> HasRolPermisoByIdAsync(Guid idRol, Guid idPermiso)
     {
         var permisos = await GetPermisosByRolIdAsync(idRol);
         return permisos.Any(p => p.IdPermiso == idPermiso);

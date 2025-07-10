@@ -33,14 +33,14 @@ public interface IPermisoService
     Task<bool> ExistsByNameAsync(string nombre);
 
     /// <summary>
-    /// Obtiene todos los permisos asignados a un rol específico
+    /// Obtiene todos los permisos asignados a un rol específico por su ID
     /// </summary>
     Task<IEnumerable<Permiso>> GetPermisosByRolIdAsync(Guid idRol);
 
     /// <summary>
     /// Obtiene todos los permisos asignados a un rol por su nombre
     /// </summary>
-    Task<IEnumerable<Permiso>> GetPermisosByRolNombreAsync(string nombreRol);
+    Task<IEnumerable<Permiso>> GetPermisosByRolNameAsync(string nombreRol);
 
     /// <summary>
     /// Obtiene todos los permisos asignados a un usuario específico (combinando permisos de todos sus roles)
@@ -50,22 +50,22 @@ public interface IPermisoService
     /// <summary>
     /// Verifica si un usuario tiene un permiso específico por nombre de permiso
     /// </summary>
-    Task<bool> HasUsuarioPermisoAsync(Guid idUsuario, string nombrePermiso);
+    Task<bool> HasUsuarioPermisoByNameAsync(Guid idUsuario, string nombrePermiso);
 
     /// <summary>
     /// Verifica si un usuario tiene un permiso específico por ID de permiso
     /// </summary>
-    Task<bool> HasUsuarioPermisoAsync(Guid idUsuario, Guid idPermiso);
+    Task<bool> HasUsuarioPermisoByIdAsync(Guid idUsuario, Guid idPermiso);
 
     /// <summary>
     /// Verifica si un rol tiene un permiso específico por nombre de permiso
     /// </summary>
-    Task<bool> HasRolPermisoAsync(Guid idRol, string nombrePermiso);
+    Task<bool> HasRolPermisoByNameAsync(Guid idRol, string nombrePermiso);
 
     /// <summary>
     /// Verifica si un rol tiene un permiso específico por ID de permiso
     /// </summary>
-    Task<bool> HasRolPermisoAsync(Guid idRol, Guid idPermiso);
+    Task<bool> HasRolPermisoByIdAsync(Guid idRol, Guid idPermiso);
 
     /// <summary>
     /// Asigna un permiso a un rol

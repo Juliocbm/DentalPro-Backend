@@ -58,7 +58,7 @@ namespace DentalPro.Api.Infrastructure.Authorization
             try
             {
                 // Verificar si el usuario tiene el permiso específico
-                bool hasPermiso = await _permisoService.HasUsuarioPermisoAsync(userId, requirement.NombrePermiso);
+                bool hasPermiso = await _permisoService.HasUsuarioPermisoByNameAsync(userId, requirement.NombrePermiso);
 
                 if (hasPermiso)
                 {
