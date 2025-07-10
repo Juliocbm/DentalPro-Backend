@@ -5,10 +5,19 @@ namespace DentalPro.Domain.Entities;
 
 /// <summary>
 /// Representa información detallada específica para usuarios con rol de Doctor
-/// Esta entidad se implementará como Owned Entity Type en EF Core
 /// </summary>
 public class DoctorDetail
 {
+    /// <summary>
+    /// ID único para DoctorDetail
+    /// </summary>
+    public Guid IdDoctorDetail { get; set; }
+    
+    /// <summary>
+    /// ID del usuario asociado (relación 1:1 con Usuario)
+    /// </summary>
+    public Guid IdUsuario { get; set; }
+    
     /// <summary>
     /// Especialidad principal del doctor
     /// </summary>
@@ -33,4 +42,9 @@ public class DoctorDetail
     /// Certificaciones profesionales del doctor (almacenado como JSON)
     /// </summary>
     public string? Certificaciones { get; set; }
+    
+    /// <summary>
+    /// Navegación a la entidad Usuario relacionada
+    /// </summary>
+    public virtual Usuario Usuario { get; set; } = null!;
 }

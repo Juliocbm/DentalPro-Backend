@@ -17,8 +17,8 @@ public class Usuario
     public Guid IdConsultorio { get; set; }
     public Consultorio? Consultorio { get; set; }
 
-    // Propiedades específicas por tipo de usuario
-    public DoctorDetail? DoctorDetail { get; set; }
+    // Propiedades específicas por tipo de usuario - navegación 1:1 a DoctorDetail
+    public virtual DoctorDetail? DoctorDetail { get; set; }
 
     // Relaciones de navegación
     public virtual ICollection<UsuarioRol> Roles { get; set; } = new List<UsuarioRol>();

@@ -33,6 +33,7 @@ namespace DentalPro.Infrastructure.Persistence
         public DbSet<Permiso> Permisos => Set<Permiso>();
         public DbSet<RolPermiso> RolesPermisos => Set<RolPermiso>();
         public DbSet<UsuarioPermiso> UsuariosPermisos => Set<UsuarioPermiso>();
+        public DbSet<DoctorDetail> DoctorDetails => Set<DoctorDetail>();
         // Entidades para el sistema de permisos y roles
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -40,22 +41,29 @@ namespace DentalPro.Infrastructure.Persistence
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
             
-            // Configuración de DoctorDetail como owned entity type
-            modelBuilder.Entity<Usuario>()
-                .OwnsOne(u => u.DoctorDetail, builder => 
-                {
-                    builder.ToTable("DoctorDetalle", "seguridad");
+            // Configuración de DoctorDetail como entidad independiente
+            modelBuilder.Entity<DoctorDetail>(builder =>
+            {
+                builder.ToTable("DoctorDetalle", "seguridad");
+                
+                builder.HasKey(d => d.IdDoctorDetail);
+                
+                builder.Property(d => d.Especialidad)
+                    .HasMaxLength(100)
+                    .IsRequired();
                     
-                    builder.Property(d => d.Especialidad)
-                        .HasMaxLength(100)
-                        .IsRequired();
-                        
-                    builder.Property(d => d.NumeroLicencia)
-                        .HasMaxLength(50);
-                        
-                    builder.Property(d => d.Certificaciones)
-                        .HasMaxLength(1000);
-                });
+                builder.Property(d => d.NumeroLicencia)
+                    .HasMaxLength(50);
+                    
+                builder.Property(d => d.Certificaciones)
+                    .HasMaxLength(1000);
+                    
+                // Configurar relación 1:1 con Usuario
+                builder.HasOne(d => d.Usuario)
+                    .WithOne()
+                    .HasForeignKey<DoctorDetail>(d => d.IdUsuario)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
                 
             // Configuración de clave primaria compuesta para RolPermiso
             modelBuilder.Entity<RolPermiso>()
