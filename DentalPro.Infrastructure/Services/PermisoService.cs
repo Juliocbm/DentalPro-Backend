@@ -1,196 +1,125 @@
-using DentalPro.Application.Common.Exceptions;
-using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Application.Interfaces.IServices;
 using DentalPro.Domain.Entities;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace DentalPro.Infrastructure.Services;
 
 /// <summary>
-/// Implementación del servicio de gestión de permisos
+/// Implementación del servicio de gestión de permisos como una fachada que delega en servicios especializados
 /// </summary>
 public class PermisoService : IPermisoService
 {
-    private readonly IPermisoRepository _permisoRepository;
-    private readonly IRolRepository _rolRepository;
-    private readonly IUsuarioRepository _usuarioRepository;
-    private readonly IMemoryCache _memoryCache;
+    private readonly IPermisoManagementService _managementService;
+    private readonly IPermisoAssignmentService _assignmentService;
+    private readonly IPermisoCacheService _cacheService;
     private readonly ILogger<PermisoService> _logger;
 
-    private const string CACHE_KEY_PERMISOS_ALL = "permisos_all";
-    private const string CACHE_KEY_PERMISOS_ROL = "permisos_rol_{0}";
-    private const string CACHE_KEY_PERMISOS_USUARIO = "permisos_usuario_{0}";
-
     public PermisoService(
-        IPermisoRepository permisoRepository,
-        IRolRepository rolRepository,
-        IUsuarioRepository usuarioRepository,
-        IMemoryCache memoryCache,
+        IPermisoManagementService managementService,
+        IPermisoAssignmentService assignmentService,
+        IPermisoCacheService cacheService,
         ILogger<PermisoService> logger)
     {
-        _permisoRepository = permisoRepository;
-        _rolRepository = rolRepository;
-        _usuarioRepository = usuarioRepository;
-        _memoryCache = memoryCache;
+        _managementService = managementService;
+        _assignmentService = assignmentService;
+        _cacheService = cacheService;
         _logger = logger;
     }
 
     /// <summary>
-    /// Obtiene todos los permisos existentes con caché
+    /// Obtiene todos los permisos existentes
     /// </summary>
-    public async Task<IEnumerable<Permiso>> GetAllPermisosAsync()
+    public Task<IEnumerable<Permiso>> GetAllPermisosAsync()
     {
-        if (!_memoryCache.TryGetValue(CACHE_KEY_PERMISOS_ALL, out IEnumerable<Permiso> permisos))
-        {
-            permisos = await _permisoRepository.GetAllAsync();
-            _memoryCache.Set(CACHE_KEY_PERMISOS_ALL, permisos, TimeSpan.FromMinutes(30));
-        }
-        return permisos;
+        return _managementService.GetAllPermisosAsync();
     }
 
     /// <summary>
     /// Obtiene un permiso por su ID
     /// </summary>
-    public async Task<Permiso?> GetPermisoByIdAsync(Guid idPermiso)
+    public Task<Permiso?> GetPermisoByIdAsync(Guid idPermiso)
     {
-        return await _permisoRepository.GetByIdAsync(idPermiso);
+        return _managementService.GetPermisoByIdAsync(idPermiso);
     }
 
     /// <summary>
     /// Obtiene un permiso por su nombre
     /// </summary>
-    public async Task<Permiso?> GetPermisoByNombreAsync(string nombre)
+    public Task<Permiso?> GetPermisoByNombreAsync(string nombre)
     {
-        return await _permisoRepository.GetByNombreAsync(nombre);
+        return _managementService.GetPermisoByNombreAsync(nombre);
     }
 
     /// <summary>
     /// Verifica si existe un permiso con el ID especificado
     /// </summary>
-    public async Task<bool> ExistsByIdAsync(Guid idPermiso)
+    public Task<bool> ExistsByIdAsync(Guid idPermiso)
     {
-        var permiso = await _permisoRepository.GetByIdAsync(idPermiso);
-        return permiso != null;
+        return _managementService.ExistsByIdAsync(idPermiso);
     }
     
     /// <summary>
     /// Verifica si existe un permiso con el nombre especificado
     /// </summary>
-    public async Task<bool> ExistsByNameAsync(string nombre)
+    public Task<bool> ExistsByNameAsync(string nombre)
     {
-        var permiso = await _permisoRepository.GetByNombreAsync(nombre);
-        return permiso != null;
+        return _managementService.ExistsByNameAsync(nombre);
     }
 
     /// <summary>
     /// Obtiene todos los permisos asignados a un rol específico
     /// </summary>
-    public async Task<IEnumerable<Permiso>> GetPermisosByRolIdAsync(Guid idRol)
+    public Task<IEnumerable<Permiso>> GetPermisosByRolIdAsync(Guid idRol)
     {
-        string cacheKey = string.Format(CACHE_KEY_PERMISOS_ROL, idRol);
-
-        if (!_memoryCache.TryGetValue(cacheKey, out IEnumerable<Permiso> permisos))
-        {
-            permisos = await _permisoRepository.GetByRolIdAsync(idRol);
-            _memoryCache.Set(cacheKey, permisos, TimeSpan.FromMinutes(15));
-        }
-
-        return permisos;
+        return _assignmentService.GetPermisosByRolIdAsync(idRol);
     }
 
     /// <summary>
     /// Obtiene todos los permisos asignados a un rol por su nombre
     /// </summary>
-    public async Task<IEnumerable<Permiso>> GetPermisosByRolNameAsync(string nombreRol)
+    public Task<IEnumerable<Permiso>> GetPermisosByRolNameAsync(string nombreRol)
     {
-        var rol = await _rolRepository.GetByNombreAsync(nombreRol);
-        if (rol == null)
-        {
-            _logger.LogWarning("Intento de obtener permisos para rol inexistente: {NombreRol}", nombreRol);
-            return Enumerable.Empty<Permiso>();
-        }
-
-        return await GetPermisosByRolIdAsync(rol.IdRol);
+        return _assignmentService.GetPermisosByRolNameAsync(nombreRol);
     }
 
     /// <summary>
     /// Obtiene todos los permisos asignados a un usuario específico (combinando permisos de todos sus roles)
     /// </summary>
-    public async Task<IEnumerable<Permiso>> GetPermisosByUsuarioIdAsync(Guid idUsuario)
+    public Task<IEnumerable<Permiso>> GetPermisosByUsuarioIdAsync(Guid idUsuario)
     {
-        string cacheKey = string.Format(CACHE_KEY_PERMISOS_USUARIO, idUsuario);
-
-        if (!_memoryCache.TryGetValue(cacheKey, out IEnumerable<Permiso> todosLosPermisos))
-        {
-            var usuario = await _usuarioRepository.GetByIdWithRolesAsync(idUsuario);
-            if (usuario == null)
-            {
-                _logger.LogWarning("Intento de obtener permisos para usuario inexistente: {IdUsuario}", idUsuario);
-                return Enumerable.Empty<Permiso>();
-            }
-
-            var permisosSet = new HashSet<Permiso>(new PermisoEqualityComparer());
-
-            // Obtener permisos de todos los roles del usuario
-            foreach (var usuarioRol in usuario.Roles)
-            {
-                var permisosRol = await GetPermisosByRolIdAsync(usuarioRol.IdRol);
-                foreach (var permiso in permisosRol)
-                {
-                    permisosSet.Add(permiso);
-                }
-            }
-
-            // También obtener permisos asignados directamente al usuario (si los hubiera)
-            // Esta es una extensión que permitiría asignar permisos específicos a usuarios
-            // si se implementa esa funcionalidad en el futuro
-
-            todosLosPermisos = permisosSet.ToList();
-            _memoryCache.Set(cacheKey, todosLosPermisos, TimeSpan.FromMinutes(10));
-        }
-
-        return todosLosPermisos;
+        return _assignmentService.GetPermisosByUsuarioIdAsync(idUsuario);
     }
 
     /// <summary>
     /// Verifica si un usuario tiene un permiso específico por nombre de permiso
     /// </summary>
-    public async Task<bool> HasUsuarioPermisoByNameAsync(Guid idUsuario, string nombrePermiso)
+    public Task<bool> HasUsuarioPermisoByNameAsync(Guid idUsuario, string nombrePermiso)
     {
-        var permisos = await GetPermisosByUsuarioIdAsync(idUsuario);
-        return permisos.Any(p => p.Nombre.Equals(nombrePermiso, StringComparison.OrdinalIgnoreCase));
+        return _assignmentService.HasUsuarioPermisoByNameAsync(idUsuario, nombrePermiso);
     }
 
     /// <summary>
     /// Verifica si un usuario tiene un permiso específico por ID de permiso
     /// </summary>
-    public async Task<bool> HasUsuarioPermisoByIdAsync(Guid idUsuario, Guid idPermiso)
+    public Task<bool> HasUsuarioPermisoByIdAsync(Guid idUsuario, Guid idPermiso)
     {
-        var permisos = await GetPermisosByUsuarioIdAsync(idUsuario);
-        return permisos.Any(p => p.IdPermiso == idPermiso);
+        return _assignmentService.HasUsuarioPermisoByIdAsync(idUsuario, idPermiso);
     }
 
     /// <summary>
     /// Verifica si un rol tiene un permiso específico por nombre de permiso
     /// </summary>
-    public async Task<bool> HasRolPermisoByNameAsync(Guid idRol, string nombrePermiso)
+    public Task<bool> HasRolPermisoByNameAsync(Guid idRol, string nombrePermiso)
     {
-        var permisos = await GetPermisosByRolIdAsync(idRol);
-        return permisos.Any(p => p.Nombre.Equals(nombrePermiso, StringComparison.OrdinalIgnoreCase));
+        return _assignmentService.HasRolPermisoByNameAsync(idRol, nombrePermiso);
     }
 
     /// <summary>
     /// Verifica si un rol tiene un permiso específico por ID de permiso
     /// </summary>
-    public async Task<bool> HasRolPermisoByIdAsync(Guid idRol, Guid idPermiso)
+    public Task<bool> HasRolPermisoByIdAsync(Guid idRol, Guid idPermiso)
     {
-        var permisos = await GetPermisosByRolIdAsync(idRol);
-        return permisos.Any(p => p.IdPermiso == idPermiso);
+        return _assignmentService.HasRolPermisoByIdAsync(idRol, idPermiso);
     }
 
     /// <summary>
@@ -198,27 +127,7 @@ public class PermisoService : IPermisoService
     /// </summary>
     public async Task AssignPermisoToRolAsync(Guid idRol, Guid idPermiso)
     {
-        var rol = await _rolRepository.GetByIdAsync(idRol);
-        if (rol == null)
-        {
-            throw new NotFoundException("Rol", idRol);
-        }
-
-        var permiso = await _permisoRepository.GetByIdAsync(idPermiso);
-        if (permiso == null)
-        {
-            throw new NotFoundException("Permiso", idPermiso);
-        }
-
-        var result = await _permisoRepository.AsignarPermisoARolAsync(idRol, idPermiso);
-        if (!result)
-        {
-            throw new BadRequestException($"No se pudo asignar el permiso {permiso.Nombre} al rol {rol.Nombre}");
-        }
-
-        // Invalidar caché relacionada
-        await InvalidateRolPermisosCacheAsync(idRol);
-        await InvalidateUsuariosCacheByRolIdAsync(idRol);
+        await _assignmentService.AssignPermisoToRolAsync(idRol, idPermiso);
     }
 
     /// <summary>
@@ -226,38 +135,7 @@ public class PermisoService : IPermisoService
     /// </summary>
     public async Task AssignPermisosToRolAsync(Guid idRol, IEnumerable<Guid> idPermisos)
     {
-        var rol = await _rolRepository.GetByIdAsync(idRol);
-        if (rol == null)
-        {
-            throw new NotFoundException("Rol", idRol);
-        }
-
-        if (!idPermisos.Any())
-        {
-            return; // No hay nada que asignar
-        }
-
-        // Verificar que todos los permisos existan
-        var permisosExistentes = new List<Permiso>();
-        foreach (var idPermiso in idPermisos)
-        {
-            var permiso = await _permisoRepository.GetByIdAsync(idPermiso);
-            if (permiso == null)
-            {
-                throw new NotFoundException("Permiso", idPermiso);
-            }
-            permisosExistentes.Add(permiso);
-        }
-
-        var result = await _permisoRepository.AsignarPermisosARolAsync(idRol, idPermisos);
-        if (!result)
-        {
-            throw new BadRequestException($"No se pudieron asignar los permisos al rol {rol.Nombre}");
-        }
-
-        // Invalidar caché relacionada
-        await InvalidateRolPermisosCacheAsync(idRol);
-        await InvalidateUsuariosCacheByRolIdAsync(idRol);
+        await _assignmentService.AssignPermisosToRolAsync(idRol, idPermisos);
     }
 
     /// <summary>
@@ -265,27 +143,7 @@ public class PermisoService : IPermisoService
     /// </summary>
     public async Task RemovePermisoFromRolAsync(Guid idRol, Guid idPermiso)
     {
-        var rol = await _rolRepository.GetByIdAsync(idRol);
-        if (rol == null)
-        {
-            throw new NotFoundException("Rol", idRol);
-        }
-
-        var permiso = await _permisoRepository.GetByIdAsync(idPermiso);
-        if (permiso == null)
-        {
-            throw new NotFoundException("Permiso", idPermiso);
-        }
-
-        var result = await _permisoRepository.RemoverPermisoDeRolAsync(idRol, idPermiso);
-        if (!result)
-        {
-            throw new BadRequestException($"No se pudo remover el permiso {permiso.Nombre} del rol {rol.Nombre}");
-        }
-
-        // Invalidar caché relacionada
-        await InvalidateRolPermisosCacheAsync(idRol);
-        await InvalidateUsuariosCacheByRolIdAsync(idRol);
+        await _assignmentService.RemovePermisoFromRolAsync(idRol, idPermiso);
     }
 
     /// <summary>
@@ -293,133 +151,41 @@ public class PermisoService : IPermisoService
     /// </summary>
     public async Task RemovePermisosFromRolAsync(Guid idRol, IEnumerable<Guid> idPermisos)
     {
-        var rol = await _rolRepository.GetByIdAsync(idRol);
-        if (rol == null)
-        {
-            throw new NotFoundException("Rol", idRol);
-        }
-
-        if (!idPermisos.Any())
-        {
-            return; // No hay nada que remover
-        }
-
-        var result = await _permisoRepository.RemoverPermisosDeRolAsync(idRol, idPermisos);
-        if (!result)
-        {
-            throw new BadRequestException($"No se pudieron remover los permisos del rol {rol.Nombre}");
-        }
-
-        // Invalidar caché relacionada
-        await InvalidateRolPermisosCacheAsync(idRol);
-        await InvalidateUsuariosCacheByRolIdAsync(idRol);
+        await _assignmentService.RemovePermisosFromRolAsync(idRol, idPermisos);
     }
 
     /// <summary>
     /// Crea un nuevo permiso
     /// </summary>
-    public async Task<Permiso> AddPermisoAsync(Permiso permiso)
+    public Task<Permiso> AddPermisoAsync(Permiso permiso)
     {
-        // Asignar un nuevo ID si no se proporciona uno
-        if (permiso.IdPermiso == Guid.Empty)
-        {
-            permiso.IdPermiso = Guid.NewGuid();
-        }
-
-        // Crear el permiso
-        var createdPermiso = await _permisoRepository.AddAsync(permiso);
-        await _permisoRepository.SaveChangesAsync();
-
-        // Invalidar solo la caché global de permisos
-        // No es necesario invalidar otras cachés ya que este permiso no está asignado a ningún rol o usuario aún
-        _memoryCache.Remove(CACHE_KEY_PERMISOS_ALL);
-
-        return createdPermiso;
+        return _managementService.AddPermisoAsync(permiso);
     }
 
     /// <summary>
     /// Actualiza un permiso existente
     /// </summary>
-    public async Task<Permiso> UpdatePermisoAsync(Permiso permiso)
+    public Task<Permiso> UpdatePermisoAsync(Permiso permiso)
     {
-        // Actualizar el permiso
-        await _permisoRepository.UpdateAsync(permiso);
-        await _permisoRepository.SaveChangesAsync();
-
-        // Invalidar caché de manera selectiva
-        _memoryCache.Remove(CACHE_KEY_PERMISOS_ALL);
-        
-        // Obtener roles afectados por este permiso
-        var rolesAfectados = await _permisoRepository.GetRolesByPermisoIdAsync(permiso.IdPermiso);
-        foreach (var rol in rolesAfectados)
-        {
-            await InvalidateRolPermisosCacheAsync(rol.IdRol);
-            await InvalidateUsuariosCacheByRolIdAsync(rol.IdRol);
-        }
-
-        return permiso;
+        return _managementService.UpdatePermisoAsync(permiso);
     }
 
     /// <summary>
     /// Elimina un permiso
     /// </summary>
-    public async Task DeletePermisoAsync(Guid idPermiso)
+    public Task DeletePermisoAsync(Guid idPermiso)
     {
-        var permiso = await _permisoRepository.GetByIdAsync(idPermiso);
-        if (permiso == null)
-        {
-            throw new NotFoundException("Permiso", idPermiso);
-        }
-
-        // Verificar si es un permiso predeterminado del sistema
-        if (permiso.PredeterminadoSistema)
-        {
-            throw new ForbiddenAccessException("No se pueden eliminar permisos predeterminados del sistema");
-        }
-        
-        // Obtener roles afectados antes de eliminar el permiso
-        var rolesAfectados = await _permisoRepository.GetRolesByPermisoIdAsync(idPermiso);
-
-        await _permisoRepository.RemoveAsync(permiso);
-        await _permisoRepository.SaveChangesAsync();
-
-        // Invalidar caché de manera selectiva
-        _memoryCache.Remove(CACHE_KEY_PERMISOS_ALL);
-        
-        // Invalidar caché de roles y usuarios afectados
-        foreach (var rol in rolesAfectados)
-        {
-            await InvalidateRolPermisosCacheAsync(rol.IdRol);
-            await InvalidateUsuariosCacheByRolIdAsync(rol.IdRol);
-        }
+        return _managementService.DeletePermisoAsync(idPermiso);
     }
 
+
+    
     /// <summary>
     /// Invalida la caché de permisos para un usuario específico
     /// </summary>
     public Task InvalidateUsuarioPermisosCacheAsync(Guid idUsuario)
     {
-        string cacheKey = string.Format(CACHE_KEY_PERMISOS_USUARIO, idUsuario);
-        _memoryCache.Remove(cacheKey);
-        _logger.LogDebug("Caché de permisos invalidada para usuario {IdUsuario}", idUsuario);
-        return Task.CompletedTask;
-    }
-    
-    /// <summary>
-    /// Invalida la caché de permisos para todos los usuarios que tienen un rol específico
-    /// </summary>
-    public async Task InvalidateUsuariosCacheByRolIdAsync(Guid idRol)
-    {
-        // Obtener todos los usuarios que tienen este rol
-        var usuarios = await _usuarioRepository.GetUsuariosByRolIdAsync(idRol);
-        
-        // Invalidar caché para cada usuario
-        foreach (var usuario in usuarios)
-        {
-            await InvalidateUsuarioPermisosCacheAsync(usuario.IdUsuario);
-        }
-        
-        _logger.LogDebug("Caché de permisos invalidada para {Count} usuarios con rol {IdRol}", usuarios.Count(), idRol);
+        return _cacheService.InvalidateUsuarioPermisosCacheAsync(idUsuario);
     }
 
     /// <summary>
@@ -427,10 +193,7 @@ public class PermisoService : IPermisoService
     /// </summary>
     public Task InvalidateRolPermisosCacheAsync(Guid idRol)
     {
-        string cacheKey = string.Format(CACHE_KEY_PERMISOS_ROL, idRol);
-        _memoryCache.Remove(cacheKey);
-        _logger.LogDebug("Caché de permisos invalidada para rol {IdRol}", idRol);
-        return Task.CompletedTask;
+        return _cacheService.InvalidateRolPermisosCacheAsync(idRol);
     }
 
     /// <summary>
@@ -438,26 +201,8 @@ public class PermisoService : IPermisoService
     /// </summary>
     public Task InvalidateAllPermisosCacheAsync()
     {
-        _memoryCache.Remove(CACHE_KEY_PERMISOS_ALL);
-        _logger.LogDebug("Caché global de permisos invalidada");
-        return Task.CompletedTask;
+        return _cacheService.InvalidateAllPermisosCacheAsync();
     }
 }
 
-/// <summary>
-/// Comparador para permisos usado en HashSet para evitar duplicados
-/// </summary>
-internal class PermisoEqualityComparer : IEqualityComparer<Permiso>
-{
-    public bool Equals(Permiso? x, Permiso? y)
-    {
-        if (x == null && y == null) return true;
-        if (x == null || y == null) return false;
-        return x.IdPermiso == y.IdPermiso;
-    }
 
-    public int GetHashCode(Permiso obj)
-    {
-        return obj.IdPermiso.GetHashCode();
-    }
-}

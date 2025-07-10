@@ -38,6 +38,11 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<IRolService, RolService>();
+        // Servicios de permisos especializados
+        services.AddScoped<IPermisoCacheService, PermisoCacheService>();
+        services.AddScoped<IPermisoManagementService, PermisoManagementService>();
+        services.AddScoped<IPermisoAssignmentService, PermisoAssignmentService>();
+        // Fachada de permisos
         services.AddScoped<IPermisoService, PermisoService>();
         services.AddScoped<IConsultorioService, ConsultorioService>();
         services.AddScoped<ICitaService, CitaService>();
