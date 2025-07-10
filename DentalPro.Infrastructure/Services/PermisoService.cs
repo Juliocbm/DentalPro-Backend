@@ -88,15 +88,6 @@ public class PermisoService : IPermisoService
     }
 
     /// <summary>
-    /// Verifica si existe un permiso con el nombre especificado
-    /// </summary>
-    public async Task<bool> ExistsPermisoByNombreAsync(string nombre)
-    {
-        // Reutilizamos el método ExistsByNameAsync para mantener compatibilidad
-        return await ExistsByNameAsync(nombre);
-    }
-
-    /// <summary>
     /// Obtiene todos los permisos asignados a un rol específico
     /// </summary>
     public async Task<IEnumerable<Permiso>> GetPermisosByRolIdAsync(Guid idRol)
@@ -323,13 +314,6 @@ public class PermisoService : IPermisoService
     /// </summary>
     public async Task<Permiso> AddPermisoAsync(Permiso permiso)
     {
-        // Verificar si ya existe un permiso con el mismo nombre
-        var existingPermiso = await _permisoRepository.GetByNombreAsync(permiso.Nombre);
-        if (existingPermiso != null)
-        {
-            throw new BadRequestException($"Ya existe un permiso con el nombre '{permiso.Nombre}'");
-        }
-
         // Asignar un nuevo ID si no se proporciona uno
         if (permiso.IdPermiso == Guid.Empty)
         {
@@ -351,19 +335,6 @@ public class PermisoService : IPermisoService
     /// </summary>
     public async Task<Permiso> UpdatePermisoAsync(Permiso permiso)
     {
-        var existingPermiso = await _permisoRepository.GetByIdAsync(permiso.IdPermiso);
-        if (existingPermiso == null)
-        {
-            throw new NotFoundException("Permiso", permiso.IdPermiso);
-        }
-
-        // Verificar que no exista otro permiso con el mismo nombre
-        var permisoWithSameName = await _permisoRepository.GetByNombreAsync(permiso.Nombre);
-        if (permisoWithSameName != null && permisoWithSameName.IdPermiso != permiso.IdPermiso)
-        {
-            throw new BadRequestException($"Ya existe otro permiso con el nombre '{permiso.Nombre}'");
-        }
-
         // Actualizar el permiso
         await _permisoRepository.UpdateAsync(permiso);
         await _permisoRepository.SaveChangesAsync();

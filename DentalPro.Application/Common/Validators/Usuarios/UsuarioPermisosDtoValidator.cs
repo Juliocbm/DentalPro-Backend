@@ -42,7 +42,7 @@ public class UsuarioPermisosDtoValidator : AbstractValidator<UsuarioPermisosDto>
                 .NotEmpty().WithMessage("El nombre del permiso no puede estar vacío")
                 .MustAsync(async (nombre, cancellation) => 
                 {
-                    return await _permisoService.ExistsPermisoByNombreAsync(nombre);
+                    return await _permisoService.ExistsByNameAsync(nombre);
                 }).WithMessage("Uno o más permisos especificados por nombre no existen");
         });
         

@@ -31,11 +31,6 @@ public interface IPermisoService
     /// Verifica si existe un permiso con el nombre especificado
     /// </summary>
     Task<bool> ExistsByNameAsync(string nombre);
-    
-    /// <summary>
-    /// Verifica si existe un permiso con el nombre especificado
-    /// </summary>
-    Task<bool> ExistsPermisoByNombreAsync(string nombre);
 
     /// <summary>
     /// Obtiene todos los permisos asignados a un rol específico
