@@ -7,6 +7,7 @@ using DentalPro.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
+using System.Collections.Generic;
 
 namespace DentalPro.Infrastructure.Services;
 
@@ -17,6 +18,7 @@ public class CurrentUserService : ICurrentUserService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IUsuarioRepository _usuarioRepository;
+    private readonly IPermisoService _permisoService;
     private readonly ILogger<CurrentUserService> _logger;
     private readonly IMemoryCache _cache;
     
@@ -30,11 +32,13 @@ public class CurrentUserService : ICurrentUserService
     public CurrentUserService(
         IHttpContextAccessor httpContextAccessor,
         IUsuarioRepository usuarioRepository,
+        IPermisoService permisoService,
         ILogger<CurrentUserService> logger,
         IMemoryCache cache)
     {
         _httpContextAccessor = httpContextAccessor;
         _usuarioRepository = usuarioRepository;
+        _permisoService = permisoService;
         _logger = logger;
         _cache = cache;
     }
@@ -156,6 +160,116 @@ public class CurrentUserService : ICurrentUserService
     }
     
     /// <summary>
+    /// Verifica si el usuario actual tiene un permiso específico
+    /// </summary>
+    public async Task<bool> HasPermisoAsync(string permisoNombre)
+    {
+        if (string.IsNullOrEmpty(permisoNombre))
+        {
+            return false;
+        }
+        
+        var userId = GetCurrentUserId();
+        var cacheKey = $"UserPermisos_{userId}";
+        
+        // Verificar primero si ya tenemos los permisos en caché
+        if (_cache.TryGetValue(cacheKey, out IEnumerable<string> cachedPermisos))
+        {
+            return cachedPermisos.Any(p => p.Equals(permisoNombre, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Si no están en caché, obtenerlos desde el servicio
+        try
+        {
+            var currentUser = await GetCurrentUserAsync();
+            var permisos = await _permisoService.GetPermisosByUsuarioIdAsync(userId);
+
+            // Guardar en caché para consultas futuras
+            _cache.Set(cacheKey, permisos, _userCacheDuration);
+
+            return permisos.Any(p => p.Nombre.Equals(permisoNombre, StringComparison.OrdinalIgnoreCase));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al verificar permiso {PermisoNombre} para usuario {UserId}", permisoNombre, userId);
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Verifica si el usuario tiene todos los permisos especificados
+    /// </summary>
+    public async Task<bool> HasAllPermisosAsync(IEnumerable<string> permisoNombres)
+    {
+        if (permisoNombres == null || !permisoNombres.Any())
+        {
+            return true; // Si no se especifican permisos, se considera que cumple la condición
+        }
+        
+        foreach (var permisoNombre in permisoNombres)
+        {
+            if (!await HasPermisoAsync(permisoNombre))
+            {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /// <summary>
+    /// Verifica si el usuario tiene al menos uno de los permisos especificados
+    /// </summary>
+    public async Task<bool> HasAnyPermisoAsync(IEnumerable<string> permisoNombres)
+    {
+        if (permisoNombres == null || !permisoNombres.Any())
+        {
+            return false;
+        }
+        
+        foreach (var permisoNombre in permisoNombres)
+        {
+            if (await HasPermisoAsync(permisoNombre))
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /// <summary>
+    /// Obtiene todos los permisos del usuario actual
+    /// </summary>
+    public async Task<IEnumerable<string>> GetPermisosAsync()
+    {
+        var userId = GetCurrentUserId();
+        var cacheKey = $"UserPermisos_{userId}";
+        
+        // Verificar si ya tenemos los permisos en caché
+        if (_cache.TryGetValue(cacheKey, out IEnumerable<string> cachedPermisos))
+        {
+            return cachedPermisos;
+        }
+        
+        // Si no están en caché, obtenerlos desde el servicio
+        try
+        {
+            var permisos = await _permisoService.GetPermisosByUsuarioIdAsync(userId);
+            
+            // Guardar en caché
+            _cache.Set(cacheKey, permisos, _userCacheDuration);
+            
+            return permisos.Select(p => p.Nombre);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener permisos para usuario {UserId}", userId);
+            return Array.Empty<string>();
+        }
+    }
+    
+    /// <summary>
     /// Invalida el caché del usuario actual, útil después de actualizaciones
     /// </summary>
     public void InvalidateCurrentUserCache()
@@ -165,6 +279,7 @@ public class CurrentUserService : ICurrentUserService
             var userId = GetCurrentUserId();
             _cache.Remove($"CurrentUser_{userId}");
             _cache.Remove($"UserRoles_{userId}");
+            _cache.Remove($"UserPermisos_{userId}");
             _logger.LogInformation("Cache de usuario {UserId} invalidado", userId);
         }
         catch (Exception ex)

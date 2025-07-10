@@ -1,4 +1,5 @@
 using DentalPro.Application.DTOs.Usuario;
+using DentalPro.Application.DTOs.Permiso;
 using DentalPro.Domain.Entities;
 
 namespace DentalPro.Application.Interfaces.IServices;
@@ -23,6 +24,20 @@ public interface IUsuarioService
     Task<bool> RemoverRolAsync(Guid idUsuario, string nombreRol);
     Task<bool> AsignarRolPorIdAsync(Guid idUsuario, Guid idRol);
     Task<bool> RemoverRolPorIdAsync(Guid idUsuario, Guid idRol);
+    
+    // Gestión de permisos
+    Task<bool> AsignarPermisoAsync(Guid idUsuario, string nombrePermiso);
+    Task<bool> AsignarPermisoAsync(Guid idUsuario, Guid idPermiso);
+    Task<bool> RemoverPermisoAsync(Guid idUsuario, string nombrePermiso);
+    Task<bool> RemoverPermisoAsync(Guid idUsuario, Guid idPermiso);
+    Task<IEnumerable<string>> GetPermisosAsync(Guid idUsuario);
+    
+    // Gestión de múltiples permisos
+    Task<bool> AsignarPermisosUsuarioAsync(Guid idUsuario, IEnumerable<Guid> idsPermisos);
+    Task<bool> AsignarPermisosUsuarioByNombreAsync(Guid idUsuario, IEnumerable<string> nombresPermisos);
+    Task<bool> RemoverPermisosUsuarioAsync(Guid idUsuario, IEnumerable<Guid> idsPermisos);
+    Task<bool> RemoverPermisosUsuarioByNombreAsync(Guid idUsuario, IEnumerable<string> nombresPermisos);
+    Task<IEnumerable<PermisoDto>> GetPermisosUsuarioAsync(Guid idUsuario);
     
     // Métodos de validación para los validadores
     Task<bool> ExistsByIdAsync(Guid id);

@@ -7,12 +7,14 @@ using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.DTOs.Rol;
 using DentalPro.Application.DTOs.Usuario;
+using DentalPro.Application.DTOs.Permiso;
 using DentalPro.Application.Interfaces.IServices;
 using DentalPro.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using DentalPro.Api.Infrastructure.Authorization;
 
 namespace DentalPro.Api.Controllers;
 
@@ -185,6 +187,130 @@ public class UsuariosController : ControllerBase
             throw new BadRequestException("No se pudo cambiar la contraseña");
         }
 
+        return NoContent();
+    }
+    
+    /// <summary>
+    /// Obtiene los permisos de un usuario específico
+    /// </summary>
+    [HttpGet("{id}/permisos")]
+    [RequirePermiso("GestionPermisos.Ver")]
+    public async Task<ActionResult<IEnumerable<PermisoDto>>> GetPermisosUsuario(Guid id)
+    {
+        // Verificar que el usuario existe
+        var usuario = await _usuarioService.GetByIdAsync(id);
+        if (usuario == null)
+        {
+            throw new NotFoundException("Usuario", id);
+        }
+
+        // Verificar que pertenece al mismo consultorio que el usuario autenticado
+        var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
+        if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuario.IdConsultorio != idConsultorio)
+        {
+            throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
+        }
+
+        // Obtener permisos del usuario
+        var permisos = await _usuarioService.GetPermisosUsuarioAsync(id);
+        return Ok(permisos);
+    }
+    
+    /// <summary>
+    /// Asigna permisos a un usuario
+    /// </summary>
+    [HttpPost("{id}/permisos")]
+    [RequirePermiso("GestionPermisos.Asignar")]
+    public async Task<IActionResult> AsignarPermisosUsuario(Guid id, [FromBody] UsuarioPermisosDto request)
+    {
+        // Verificar que el ID coincide
+        if (id != request.IdUsuario)
+        {
+            throw new BadRequestException("El ID de la URL no coincide con el ID en el cuerpo de la solicitud");
+        }
+
+        // Verificar que el usuario existe
+        var usuario = await _usuarioService.GetByIdAsync(id);
+        if (usuario == null)
+        {
+            throw new NotFoundException("Usuario", id);
+        }
+
+        // Verificar que pertenece al mismo consultorio que el usuario autenticado
+        var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
+        if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuario.IdConsultorio != idConsultorio)
+        {
+            throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
+        }
+        
+        bool result = false;
+        
+        // Asignar permisos por ID
+        if (request.PermisoIds != null && request.PermisoIds.Count > 0)
+        {
+            result = await _usuarioService.AsignarPermisosUsuarioAsync(id, request.PermisoIds);
+        }
+        
+        // Asignar permisos por nombre
+        if (request.PermisoNombres != null && request.PermisoNombres.Count > 0)
+        {
+            result = await _usuarioService.AsignarPermisosUsuarioByNombreAsync(id, request.PermisoNombres);
+        }
+        
+        if (!result)
+        {
+            throw new BadRequestException("No se pudieron asignar los permisos al usuario");
+        }
+        
+        return NoContent();
+    }
+    
+    /// <summary>
+    /// Elimina permisos de un usuario
+    /// </summary>
+    [HttpDelete("{id}/permisos")]
+    [RequirePermiso("GestionPermisos.Remover")]
+    public async Task<IActionResult> RemoverPermisosUsuario(Guid id, [FromBody] UsuarioPermisosDto request)
+    {
+        // Verificar que el ID coincide
+        if (id != request.IdUsuario)
+        {
+            throw new BadRequestException("El ID de la URL no coincide con el ID en el cuerpo de la solicitud");
+        }
+
+        // Verificar que el usuario existe
+        var usuario = await _usuarioService.GetByIdAsync(id);
+        if (usuario == null)
+        {
+            throw new NotFoundException("Usuario", id);
+        }
+
+        // Verificar que pertenece al mismo consultorio que el usuario autenticado
+        var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
+        if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || usuario.IdConsultorio != idConsultorio)
+        {
+            throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
+        }
+        
+        bool result = false;
+        
+        // Remover permisos por ID
+        if (request.PermisoIds != null && request.PermisoIds.Count > 0)
+        {
+            result = await _usuarioService.RemoverPermisosUsuarioAsync(id, request.PermisoIds);
+        }
+        
+        // Remover permisos por nombre
+        if (request.PermisoNombres != null && request.PermisoNombres.Count > 0)
+        {
+            result = await _usuarioService.RemoverPermisosUsuarioByNombreAsync(id, request.PermisoNombres);
+        }
+        
+        if (!result)
+        {
+            throw new BadRequestException("No se pudieron remover los permisos del usuario");
+        }
+        
         return NoContent();
     }
 }
