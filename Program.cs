@@ -139,10 +139,16 @@ builder.Services.AddAuthorization(options =>
     
     // Política para validar acceso a consultorio
     options.AddPolicy("RequireConsultorioAccess", policy => policy.Requirements.Add(new ConsultorioAccessRequirement()));
+    
+    // Las políticas de permisos se manejarán dinámicamente a través de PermisoPolicyProvider
 });
 
 // Registrar los manejadores de autorización personalizados
 builder.Services.AddSingleton<IAuthorizationHandler, ConsultorioAccessHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, PermisoAuthorizationHandler>();
+
+// Registrar el proveedor dinámico de políticas para permisos
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermisoPolicyProvider>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
