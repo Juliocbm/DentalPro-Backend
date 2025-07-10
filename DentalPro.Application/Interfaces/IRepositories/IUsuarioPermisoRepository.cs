@@ -51,6 +51,13 @@ namespace DentalPro.Application.Interfaces.IRepositories
         /// <param name="usuarioPermiso">Relación usuario-permiso a agregar</param>
         /// <returns>Relación usuario-permiso agregada</returns>
         Task<UsuarioPermiso> AddAsync(UsuarioPermiso usuarioPermiso);
+        
+        /// <summary>
+        /// Agrega múltiples asignaciones de permisos a usuario en una sola operación
+        /// </summary>
+        /// <param name="usuarioPermisos">Lista de relaciones usuario-permiso a agregar</param>
+        /// <returns>True si se agregaron correctamente, False si no</returns>
+        Task<bool> AddRangeAsync(IEnumerable<UsuarioPermiso> usuarioPermisos);
 
         /// <summary>
         /// Elimina una asignación de permiso a usuario por ID de usuario y permiso

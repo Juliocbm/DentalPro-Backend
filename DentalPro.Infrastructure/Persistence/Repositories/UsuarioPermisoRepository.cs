@@ -48,6 +48,45 @@ namespace DentalPro.Infrastructure.Persistence.Repositories
                 .Include(up => up.Usuario)
                 .ToListAsync();
         }
+        
+        /// <summary>
+        /// Agrega múltiples asignaciones de permisos a usuario en una sola operación
+        /// </summary>
+        /// <param name="usuarioPermisos">Lista de relaciones usuario-permiso a agregar</param>
+        /// <returns>True si se agregaron correctamente, False si no</returns>
+        public async Task<bool> AddRangeAsync(IEnumerable<UsuarioPermiso> usuarioPermisos)
+        {
+            try
+            {
+                // Verificar que no existan las relaciones antes de agregarlas
+                var idsToAdd = new List<(Guid idUsuario, Guid idPermiso)>();
+                foreach (var usuarioPermiso in usuarioPermisos)
+                {
+                    idsToAdd.Add((usuarioPermiso.IdUsuario, usuarioPermiso.IdPermiso));
+                }
+                
+                // Filtrar las relaciones que ya existen
+                var existingRelations = await _dbSet
+                    .Where(up => idsToAdd.Any(id => id.idUsuario == up.IdUsuario && id.idPermiso == up.IdPermiso))
+                    .ToListAsync();
+                
+                // Obtener solo las relaciones que no existen ya
+                var newRelations = usuarioPermisos.Where(up => 
+                    !existingRelations.Any(er => er.IdUsuario == up.IdUsuario && er.IdPermiso == up.IdPermiso));
+                
+                if (newRelations.Any())
+                {
+                    await _dbSet.AddRangeAsync(newRelations);
+                    await _context.SaveChangesAsync();
+                }
+                
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
 
         /// <summary>
         /// Elimina una asignación de permiso a usuario por ID de usuario y permiso

@@ -51,6 +51,13 @@ namespace DentalPro.Application.Interfaces.IRepositories
         /// <param name="rolPermiso">Relación rol-permiso a agregar</param>
         /// <returns>Relación rol-permiso agregada</returns>
         Task<RolPermiso> AddAsync(RolPermiso rolPermiso);
+        
+        /// <summary>
+        /// Agrega múltiples relaciones rol-permiso en una sola operación
+        /// </summary>
+        /// <param name="rolPermisos">Lista de relaciones rol-permiso a agregar</param>
+        /// <returns>True si se agregaron correctamente, False si no</returns>
+        Task<bool> AddRangeAsync(IEnumerable<RolPermiso> rolPermisos);
 
         /// <summary>
         /// Elimina una relación rol-permiso por ID de rol y permiso

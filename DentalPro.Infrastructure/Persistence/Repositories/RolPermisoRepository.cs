@@ -48,6 +48,45 @@ namespace DentalPro.Infrastructure.Persistence.Repositories
                 .Include(rp => rp.Rol)
                 .ToListAsync();
         }
+        
+        /// <summary>
+        /// Agrega múltiples relaciones rol-permiso en una sola operación
+        /// </summary>
+        /// <param name="rolPermisos">Lista de relaciones rol-permiso a agregar</param>
+        /// <returns>True si se agregaron correctamente, False si no</returns>
+        public async Task<bool> AddRangeAsync(IEnumerable<RolPermiso> rolPermisos)
+        {
+            try
+            {
+                // Verificar que no existan las relaciones antes de agregarlas
+                var idsToAdd = new List<(Guid idRol, Guid idPermiso)>();
+                foreach (var rolPermiso in rolPermisos)
+                {
+                    idsToAdd.Add((rolPermiso.IdRol, rolPermiso.IdPermiso));
+                }
+                
+                // Filtrar las relaciones que ya existen
+                var existingRelations = await _dbSet
+                    .Where(rp => idsToAdd.Any(id => id.idRol == rp.IdRol && id.idPermiso == rp.IdPermiso))
+                    .ToListAsync();
+                
+                // Obtener solo las relaciones que no existen ya
+                var newRelations = rolPermisos.Where(rp => 
+                    !existingRelations.Any(er => er.IdRol == rp.IdRol && er.IdPermiso == rp.IdPermiso));
+                
+                if (newRelations.Any())
+                {
+                    await _dbSet.AddRangeAsync(newRelations);
+                    await _context.SaveChangesAsync();
+                }
+                
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
 
         /// <summary>
         /// Elimina una relación rol-permiso por ID de rol y permiso
