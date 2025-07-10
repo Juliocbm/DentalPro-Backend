@@ -24,6 +24,14 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
                 .ThenInclude(r => r.Rol)
             .ToListAsync();
     }
+    
+    public async Task<IEnumerable<Usuario>> GetUsuariosByRolIdAsync(Guid idRol)
+    {
+        return await _dbSet
+            .Include(u => u.Roles)
+            .Where(u => u.Roles.Any(r => r.IdRol == idRol))
+            .ToListAsync();
+    }
 
     public async Task<IEnumerable<string>> GetUserRolesAsync(Guid idUsuario)
     {

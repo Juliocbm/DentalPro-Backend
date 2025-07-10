@@ -7,6 +7,7 @@ public interface IUsuarioRepository : IGenericRepository<Usuario>
     // Métodos de consulta
     Task<Usuario?> GetByEmailAsync(string email);
     Task<IEnumerable<Usuario>> GetByConsultorioAsync(Guid idConsultorio);
+    Task<IEnumerable<Usuario>> GetUsuariosByRolIdAsync(Guid idRol);
     Task<Usuario?> GetByIdWithRolesAsync(Guid idUsuario);
     Task<Usuario?> GetByIdWithPermisosAsync(Guid idUsuario);
     Task<Usuario?> GetByIdWithRolesAndPermisosAsync(Guid idUsuario);
