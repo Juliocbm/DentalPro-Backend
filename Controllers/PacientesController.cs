@@ -5,6 +5,8 @@ using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Domain.Entities;
 using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.Common.Constants;
+using DentalPro.Application.Common.Permissions;
+using DentalPro.Api.Infrastructure.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -15,7 +17,6 @@ namespace DentalPro.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class PacientesController : ControllerBase
     {
         private readonly IPacienteService _pacienteService;
@@ -26,7 +27,7 @@ namespace DentalPro.Api.Controllers
         }
 
         [HttpGet]
-        [Authorize(Policy = "RequireAuthenticatedUser")]
+        [RequirePermiso(PacientesPermissions.ViewAll)]
         public async Task<ActionResult<IEnumerable<PacienteDto>>> GetPacientes()
         {
             var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
@@ -54,7 +55,7 @@ namespace DentalPro.Api.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        [Authorize(Policy = "RequireAuthenticatedUser")]
+        [RequirePermiso(PacientesPermissions.ViewDetail)]
         public async Task<ActionResult<PacienteDto>> GetPaciente(Guid id)
         {
             var paciente = await _pacienteService.GetByIdAsync(id);
@@ -87,7 +88,7 @@ namespace DentalPro.Api.Controllers
         }
 
         [HttpPost]
-        [Authorize(Policy = "RequireAdminRole")]
+        [RequirePermiso(PacientesPermissions.Create)]
         public async Task<ActionResult<PacienteDto>> CreatePaciente(PacienteCreateDto createDto)
         {
             var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
@@ -125,7 +126,7 @@ namespace DentalPro.Api.Controllers
         }
 
         [HttpPut("{id:guid}")]
-        [Authorize(Policy = "RequireAdminRole")]
+        [RequirePermiso(PacientesPermissions.Update)]
         public async Task<IActionResult> UpdatePaciente(Guid id, PacienteUpdateDto updateDto)
         {
             if (id != updateDto.IdPaciente)
@@ -161,7 +162,7 @@ namespace DentalPro.Api.Controllers
         }
 
         [HttpDelete("{id:guid}")]
-        [Authorize(Policy = "RequireAdminRole")]
+        [RequirePermiso(PacientesPermissions.Delete)]
         public async Task<IActionResult> DeletePaciente(Guid id)
         {
             var paciente = await _pacienteService.GetByIdAsync(id);

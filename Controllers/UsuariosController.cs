@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
+using DentalPro.Application.Common.Permissions;
 using DentalPro.Application.DTOs.Rol;
 using DentalPro.Application.DTOs.Usuario;
 using DentalPro.Application.DTOs.Permiso;
@@ -20,7 +21,6 @@ namespace DentalPro.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Policy = "RequireAuthenticatedUser")]
 public class UsuariosController : ControllerBase
 {
     private readonly IUsuarioService _usuarioService;
@@ -31,7 +31,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = "RequireAdminRole")]
+    [RequirePermiso(UsuariosPermissions.ViewAll)]
     public async Task<ActionResult<IEnumerable<UsuarioDto>>> GetUsuarios()
     {
         // Obtener el ID del consultorio del token JWT
@@ -48,6 +48,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [RequirePermiso(UsuariosPermissions.ViewDetail)]
     public async Task<ActionResult<UsuarioDto>> GetUsuario(Guid id)
     {
         var usuarioDto = await _usuarioService.GetByIdAsync(id);
@@ -68,7 +69,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "RequireAdminRole")]
+    [RequirePermiso(UsuariosPermissions.Create)]
     public async Task<ActionResult<UsuarioDto>> CreateUsuario([FromBody] UsuarioCreateDto usuarioCreateDto)
     {
         // Obtener el ID del consultorio del token JWT
@@ -94,7 +95,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Policy = "RequireAdminRole")]
+    [RequirePermiso(UsuariosPermissions.Update)]
     public async Task<ActionResult<UsuarioDto>> UpdateUsuario(Guid id, [FromBody] UsuarioUpdateDto usuarioUpdateDto)
     {
         if (id != usuarioUpdateDto.IdUsuario)
@@ -124,8 +125,8 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "RequireAdminRole")]
-    public async Task<IActionResult> DeleteUsuario(Guid id)
+    [RequirePermiso(UsuariosPermissions.Delete)]
+    public async Task<ActionResult> DeleteUsuario(Guid id)
     {
         // Verificar que el usuario existe
         var usuario = await _usuarioService.GetByIdAsync(id);
@@ -151,11 +152,12 @@ public class UsuariosController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("{id}/cambiar-password")]
-    public async Task<IActionResult> ChangePassword(Guid id, [FromBody] UsuarioChangePasswordDto request)
+    [HttpPost("{id}/cambiar-contrasena")]
+    [RequirePermiso(UsuariosPermissions.ChangePassword)]
+    public async Task<IActionResult> ChangePassword(Guid id, [FromBody] UsuarioChangePasswordDto changePasswordDto)
     {
         // Verificar que el ID coincide
-        if (id != request.IdUsuario)
+        if (id != changePasswordDto.IdUsuario)
         {
             throw new BadRequestException("El ID de la URL no coincide con el ID en el cuerpo de la solicitud");
         }
@@ -175,13 +177,13 @@ public class UsuariosController : ControllerBase
         }
 
         // Verificar que la nueva contraseña y la confirmación coinciden
-        if (request.NewPassword != request.ConfirmNewPassword)
+        if (changePasswordDto.NewPassword != changePasswordDto.ConfirmNewPassword)
         {
             throw new BadRequestException(ErrorMessages.PasswordMismatch);
         }
 
         // Cambiar la contraseña
-        var result = await _usuarioService.ChangePasswordAsync(id, request.CurrentPassword, request.NewPassword);
+        var result = await _usuarioService.ChangePasswordAsync(id, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword);
         if (!result)
         {
             throw new BadRequestException("No se pudo cambiar la contraseña");
@@ -194,7 +196,7 @@ public class UsuariosController : ControllerBase
     /// Obtiene los permisos de un usuario específico
     /// </summary>
     [HttpGet("{id}/permisos")]
-    [RequirePermiso("GestionPermisos.Ver")]
+    [RequirePermiso(UsuariosPermissions.ViewPermisos)]
     public async Task<ActionResult<IEnumerable<PermisoDto>>> GetPermisosUsuario(Guid id)
     {
         // Verificar que el usuario existe
@@ -220,7 +222,7 @@ public class UsuariosController : ControllerBase
     /// Asigna permisos a un usuario
     /// </summary>
     [HttpPost("{id}/permisos")]
-    [RequirePermiso("GestionPermisos.Asignar")]
+    [RequirePermiso(UsuariosPermissions.AssignPermisos)]
     public async Task<IActionResult> AsignarPermisosUsuario(Guid id, [FromBody] UsuarioPermisosDto request)
     {
         // Verificar que el ID coincide
@@ -269,7 +271,7 @@ public class UsuariosController : ControllerBase
     /// Elimina permisos de un usuario
     /// </summary>
     [HttpDelete("{id}/permisos")]
-    [RequirePermiso("GestionPermisos.Remover")]
+    [RequirePermiso(UsuariosPermissions.RemovePermisos)]
     public async Task<IActionResult> RemoverPermisosUsuario(Guid id, [FromBody] UsuarioPermisosDto request)
     {
         // Verificar que el ID coincide

@@ -1,5 +1,6 @@
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
+using DentalPro.Application.Common.Permissions;
 using DentalPro.Application.DTOs.Auth;
 using Microsoft.AspNetCore.Mvc;
 using FluentValidation;
@@ -11,6 +12,7 @@ using System.Text;
 using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using DentalPro.Api.Infrastructure.Authorization;
 
 namespace DentalPro.Api.Controllers;
 
@@ -43,7 +45,7 @@ public class DiagnosticController : ControllerBase
     /// Verifica que la API esté funcionando correctamente
     /// </summary>
     [HttpGet("health")]
-    [AllowAnonymous]
+    [AllowAnonymous] // Health check se mantiene anónimo por razones de monitoreo
     public ActionResult HealthCheck()
     {
         return Ok(new { 
@@ -66,7 +68,7 @@ public class DiagnosticController : ControllerBase
     /// - Para validar RolUpdateDto: POST /api/diagnostic/validation?dtoType=Rol.RolUpdateDto
     /// </remarks>
     [HttpPost("validation")]
-    [AllowAnonymous]
+    [RequirePermiso(DiagnosticPermissions.ValidateDto)]
     public async Task<IActionResult> ValidateDto([FromBody] JsonElement requestData, [FromQuery] string dtoType)
     {
         if (string.IsNullOrEmpty(dtoType))
@@ -205,7 +207,7 @@ public class DiagnosticController : ControllerBase
     /// Valida y muestra información de un token JWT
     /// </summary>
     [HttpGet("auth/token")]
-    [AllowAnonymous]
+    [RequirePermiso(DiagnosticPermissions.ValidateToken)]
     public ActionResult ValidateToken(string token)
     {
         if (string.IsNullOrEmpty(token))
@@ -252,7 +254,7 @@ public class DiagnosticController : ControllerBase
     /// Muestra los claims del usuario autenticado actual
     /// </summary>
     [HttpGet("auth/claims")]
-    [Authorize]
+    [RequirePermiso(DiagnosticPermissions.ViewClaims)]
     public ActionResult GetCurrentUserClaims()
     {
         var claims = User.Claims.Select(c => new 

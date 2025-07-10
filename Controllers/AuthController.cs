@@ -1,7 +1,9 @@
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
+using DentalPro.Application.Common.Permissions;
 using DentalPro.Application.DTOs.Auth;
 using DentalPro.Application.Interfaces.IServices;
+using DentalPro.Api.Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -48,7 +50,7 @@ public class AuthController : ControllerBase
     }
     
     [HttpPost("revoke-token")]
-    [Authorize(Policy = "RequireAuthenticatedUser")]
+    [RequirePermiso(AuthPermissions.RevokeToken)]
     public async Task<IActionResult> RevokeToken([FromBody] AuthRefreshTokenDto request)
     {
         await _authService.RevokeTokenAsync(request.RefreshToken);

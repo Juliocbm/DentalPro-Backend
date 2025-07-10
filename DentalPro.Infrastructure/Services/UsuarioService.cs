@@ -2,6 +2,7 @@ using AutoMapper;
 using BCrypt.Net;
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
+using DentalPro.Application.Common.Permissions;
 using DentalPro.Application.DTOs.Usuario;
 using DentalPro.Application.DTOs.Permiso;
 using DentalPro.Application.Interfaces.IRepositories;
@@ -19,6 +20,7 @@ public class UsuarioService : IUsuarioService
     private readonly IPermisoRepository _permisoRepository;
     private readonly IPermisoService _permisoService;
     private readonly IMapper _mapper;
+    private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<UsuarioService> _logger;
 
     public UsuarioService(
@@ -27,6 +29,7 @@ public class UsuarioService : IUsuarioService
         IPermisoRepository permisoRepository,
         IPermisoService permisoService,
         IMapper mapper,
+        ICurrentUserService currentUserService,
         ILogger<UsuarioService> logger)
     {
         _usuarioRepository = usuarioRepository;
@@ -34,13 +37,34 @@ public class UsuarioService : IUsuarioService
         _permisoRepository = permisoRepository;
         _permisoService = permisoService;
         _mapper = mapper;
+        _currentUserService = currentUserService;
         _logger = logger;
     }
 
     public async Task<UsuarioDto?> GetByIdAsync(Guid id)
     {
+        // Verificar permiso para ver detalles de usuario
+        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.ViewDetail))
+        {
+            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó ver detalles de usuario sin el permiso requerido", _currentUserService.GetCurrentUserId());
+            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+        }
+
         var usuario = await _usuarioRepository.GetByIdAsync(id);
-        return usuario != null ? _mapper.Map<UsuarioDto>(usuario) : null;
+        if (usuario == null)
+        {
+            return null;
+        }
+        
+        // Verificar que el usuario pertenezca al mismo consultorio
+        var currentConsultorioId = _currentUserService.GetCurrentConsultorioId();
+        if (usuario.IdConsultorio != currentConsultorioId && !await _currentUserService.HasPermisoAsync(UsuariosPermissions.ViewAllConsultorios))
+        {
+            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó ver usuario de otro consultorio", _currentUserService.GetCurrentUserId());
+            throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
+        }
+        
+        return _mapper.Map<UsuarioDto>(usuario);
     }
 
     public async Task<UsuarioDto?> GetByEmailAsync(string email)
@@ -51,6 +75,21 @@ public class UsuarioService : IUsuarioService
 
     public async Task<IEnumerable<UsuarioDto>> GetAllByConsultorioAsync(Guid idConsultorio)
     {
+        // Verificar permiso para listar usuarios
+        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.ViewAll))
+        {
+            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó listar usuarios sin el permiso requerido", _currentUserService.GetCurrentUserId());
+            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+        }
+        
+        // Verificar que sea el consultorio del usuario actual o tenga permisos para ver todos
+        var currentConsultorioId = _currentUserService.GetCurrentConsultorioId();
+        if (idConsultorio != currentConsultorioId && !await _currentUserService.HasPermisoAsync(UsuariosPermissions.ViewAllConsultorios))
+        {
+            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó listar usuarios de otro consultorio", _currentUserService.GetCurrentUserId());
+            throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
+        }
+
         var usuarios = await _usuarioRepository.GetByConsultorioAsync(idConsultorio);
         return _mapper.Map<IEnumerable<UsuarioDto>>(usuarios);
     }
@@ -75,6 +114,13 @@ public class UsuarioService : IUsuarioService
     // Nuevo método estandarizado con DTO
     public async Task<UsuarioDto> CreateAsync(UsuarioCreateDto usuarioCreateDto)
     {
+        // Verificar permiso para crear usuarios
+        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.Create))
+        {
+            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó crear usuario sin el permiso requerido", _currentUserService.GetCurrentUserId());
+            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+        }
+
         _logger.LogInformation("Creando nuevo usuario con correo: {Email}", usuarioCreateDto.Correo);
         
         // Mapear DTO a entidad
@@ -121,10 +167,26 @@ public class UsuarioService : IUsuarioService
         return _mapper.Map<UsuarioDto>(usuarioCompleto);
     }
 
-    // Nuevo método estandarizado con DTO
+    /// <summary>
+    /// Actualiza un usuario usando un DTO de actualización con ID incluido
+    /// </summary>
     public async Task<UsuarioDto> UpdateAsync(UsuarioUpdateDto usuarioUpdateDto)
     {
-        _logger.LogInformation("Actualizando usuario con ID: {UserId}", usuarioUpdateDto.IdUsuario);
+        // Implementar la versión que toma solo el DTO, extrayendo el ID del mismo
+        return await UpdateAsync(usuarioUpdateDto.IdUsuario, usuarioUpdateDto);
+    }
+    
+    // Método original con ID explícito
+    public async Task<UsuarioDto> UpdateAsync(Guid id, UsuarioUpdateDto usuarioUpdateDto)
+    {
+        // Verificar permiso para actualizar usuarios
+        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.Update))
+        {
+            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó actualizar usuario sin el permiso requerido", _currentUserService.GetCurrentUserId());
+            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+        }
+
+        _logger.LogInformation("Actualizando usuario con ID: {UserId}", id);
         
         // Verificar que el usuario existe
         var existingUser = await _usuarioRepository.GetByIdAsync(usuarioUpdateDto.IdUsuario);
@@ -179,9 +241,19 @@ public class UsuarioService : IUsuarioService
         return true;
     }
 
-    public async Task<bool> ChangePasswordAsync(Guid id, string currentPassword, string newPassword)
+    public async Task<bool> ChangePasswordAsync(Guid idUsuario, string currentPassword, string newPassword)
     {
-        var usuario = await _usuarioRepository.GetByIdAsync(id);
+        // Verificar permiso para cambiar contraseñas
+        // El usuario puede cambiar su propia contraseña o necesita permisos específicos
+        var currentUserId = _currentUserService.GetCurrentUserId();
+        if (idUsuario != currentUserId && !await _currentUserService.HasPermisoAsync(UsuariosPermissions.ChangePassword))
+        {
+            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó cambiar contraseña de otro usuario sin el permiso requerido", currentUserId);
+            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+        }
+
+        _logger.LogInformation("Cambiando contraseña para usuario con ID: {UserId}", idUsuario);
+        var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
         if (usuario == null)
         {
             return false;
@@ -353,13 +425,20 @@ public class UsuarioService : IUsuarioService
     
     public async Task<IEnumerable<PermisoDto>> GetPermisosUsuarioAsync(Guid idUsuario)
     {
-        _logger.LogInformation("Obteniendo permisos detallados del usuario {UserId}", idUsuario);
+        // Verificar permiso para ver permisos de usuarios
+        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.ViewPermisos))
+        {
+            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó ver permisos de otro usuario sin el permiso requerido", _currentUserService.GetCurrentUserId());
+            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+        }
+        
+        _logger.LogInformation("Obteniendo permisos para usuario {UserId}", idUsuario);
         
         // Verificar que el usuario existe
         var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
         if (usuario == null)
         {
-            _logger.LogWarning("No se pueden obtener permisos detallados: usuario {UserId} no existe", idUsuario);
+            _logger.LogWarning("No se pueden obtener permisos: usuario {UserId} no existe", idUsuario);
             throw new NotFoundException("Usuario", idUsuario);
         }
         
@@ -372,6 +451,13 @@ public class UsuarioService : IUsuarioService
     
     public async Task<bool> AsignarPermisosUsuarioAsync(Guid idUsuario, IEnumerable<Guid> idsPermisos)
     {
+        // Verificar permiso para asignar permisos
+        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.AssignPermisos))
+        {
+            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó asignar permisos sin el permiso requerido", _currentUserService.GetCurrentUserId());
+            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+        }
+
         _logger.LogInformation("Asignando múltiples permisos a usuario {UserId}", idUsuario);
         
         // Verificar que el usuario existe
@@ -437,6 +523,13 @@ public class UsuarioService : IUsuarioService
     
     public async Task<bool> RemoverPermisosUsuarioAsync(Guid idUsuario, IEnumerable<Guid> idsPermisos)
     {
+        // Verificar permiso para remover permisos
+        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.RemovePermisos))
+        {
+            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó remover permisos sin el permiso requerido", _currentUserService.GetCurrentUserId());
+            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+        }
+
         _logger.LogInformation("Removiendo múltiples permisos de usuario {UserId}", idUsuario);
         
         // Verificar que el usuario existe
@@ -472,6 +565,13 @@ public class UsuarioService : IUsuarioService
     
     public async Task<bool> RemoverPermisosUsuarioByNombreAsync(Guid idUsuario, IEnumerable<string> nombresPermisos)
     {
+        // Verificar permiso para remover permisos
+        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.RemovePermisos))
+        {
+            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó remover permisos por nombre sin el permiso requerido", _currentUserService.GetCurrentUserId());
+            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+        }
+
         _logger.LogInformation("Removiendo múltiples permisos por nombre de usuario {UserId}", idUsuario);
         
         // Verificar que el usuario existe

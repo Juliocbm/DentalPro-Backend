@@ -70,12 +70,30 @@ public class PermisoService : IPermisoService
     }
 
     /// <summary>
+    /// Verifica si existe un permiso con el ID especificado
+    /// </summary>
+    public async Task<bool> ExistsByIdAsync(Guid idPermiso)
+    {
+        var permiso = await _permisoRepository.GetByIdAsync(idPermiso);
+        return permiso != null;
+    }
+    
+    /// <summary>
+    /// Verifica si existe un permiso con el nombre especificado
+    /// </summary>
+    public async Task<bool> ExistsByNameAsync(string nombre)
+    {
+        var permiso = await _permisoRepository.GetByNombreAsync(nombre);
+        return permiso != null;
+    }
+
+    /// <summary>
     /// Verifica si existe un permiso con el nombre especificado
     /// </summary>
     public async Task<bool> ExistsPermisoByNombreAsync(string nombre)
     {
-        var permiso = await _permisoRepository.GetByNombreAsync(nombre);
-        return permiso != null;
+        // Reutilizamos el método ExistsByNameAsync para mantener compatibilidad
+        return await ExistsByNameAsync(nombre);
     }
 
     /// <summary>

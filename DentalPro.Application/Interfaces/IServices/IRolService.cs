@@ -1,3 +1,4 @@
+using DentalPro.Application.DTOs.Permiso;
 using DentalPro.Application.DTOs.Rol;
 using DentalPro.Domain.Entities;
 
@@ -51,4 +52,43 @@ public interface IRolService
     /// <param name="id">ID del rol a verificar</param>
     /// <returns>True si existe, False en caso contrario</returns>
     Task<bool> ExistsByIdAsync(Guid id);
+    
+    /// <summary>
+    /// Obtiene los permisos asignados a un rol
+    /// </summary>
+    /// <param name="idRol">ID del rol del que se desean obtener los permisos</param>
+    /// <returns>Lista de permisos asociados al rol</returns>
+    Task<IEnumerable<PermisoDto>> GetPermisosRolAsync(Guid idRol);
+    
+    /// <summary>
+    /// Asigna permisos a un rol por sus IDs
+    /// </summary>
+    /// <param name="idRol">ID del rol al que se asignarán los permisos</param>
+    /// <param name="permisoIds">Lista de IDs de permisos a asignar</param>
+    /// <returns>True si se asignaron correctamente, False en caso contrario</returns>
+    Task<bool> AsignarPermisosRolAsync(Guid idRol, IEnumerable<Guid> permisoIds);
+    
+    /// <summary>
+    /// Asigna permisos a un rol por sus nombres
+    /// </summary>
+    /// <param name="idRol">ID del rol al que se asignarán los permisos</param>
+    /// <param name="permisoNombres">Lista de nombres de permisos a asignar</param>
+    /// <returns>True si se asignaron correctamente, False en caso contrario</returns>
+    Task<bool> AsignarPermisosRolByNombreAsync(Guid idRol, IEnumerable<string> permisoNombres);
+    
+    /// <summary>
+    /// Remueve permisos de un rol por sus IDs
+    /// </summary>
+    /// <param name="idRol">ID del rol del que se removerán los permisos</param>
+    /// <param name="permisoIds">Lista de IDs de permisos a remover</param>
+    /// <returns>True si se removieron correctamente, False en caso contrario</returns>
+    Task<bool> RemoverPermisosRolAsync(Guid idRol, IEnumerable<Guid> permisoIds);
+    
+    /// <summary>
+    /// Remueve permisos de un rol por sus nombres
+    /// </summary>
+    /// <param name="idRol">ID del rol del que se removerán los permisos</param>
+    /// <param name="permisoNombres">Lista de nombres de permisos a remover</param>
+    /// <returns>True si se removieron correctamente, False en caso contrario</returns>
+    Task<bool> RemoverPermisosRolByNombreAsync(Guid idRol, IEnumerable<string> permisoNombres);
 }

@@ -22,6 +22,7 @@ public static class ErrorMessages
     public const string UnauthorizedAccess = "No está autorizado para realizar esta operación.";
     public const string ForbiddenResource = "No tiene permisos para acceder a este recurso.";
     public const string DifferentConsultorio = "No tiene permisos para acceder a recursos de otro consultorio.";
+    public const string InsufficientPermissions = "No tiene los permisos suficientes para realizar esta operación.";
     
     // Mensajes de recursos
     public const string ResourceNotFound = "El recurso solicitado no existe.";
