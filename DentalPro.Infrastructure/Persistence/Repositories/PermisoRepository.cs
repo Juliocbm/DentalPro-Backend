@@ -113,23 +113,6 @@ public class PermisoRepository : GenericRepository<Permiso>, IPermisoRepository
     }
 
     /// <summary>
-    /// Actualiza un permiso existente y devuelve el permiso actualizado
-    /// </summary>
-    /// <param name="permiso">Permiso con datos actualizados</param>
-    /// <returns>Permiso actualizado</returns>
-    public new async Task<Permiso> UpdateAsync(Permiso permiso)
-    {
-        // Llamamos al método base para actualizar la entidad
-        await base.UpdateAsync(permiso);
-
-        // Guardamos los cambios
-        await _context.SaveChangesAsync();
-
-        // Devolvemos la entidad actualizada
-        return permiso;
-    }
-
-    /// <summary>
     /// Elimina un permiso por su ID
     /// </summary>
     /// <param name="id">ID del permiso a eliminar</param>
@@ -139,7 +122,7 @@ public class PermisoRepository : GenericRepository<Permiso>, IPermisoRepository
         try
         {
             // Buscar el permiso por su ID
-            var permiso = await _dbSet.FindAsync(id);
+            var permiso = await GetByIdAsync(id);
             if (permiso == null) return false;
 
             // Verificar si el permiso está asignado a algún rol
@@ -156,11 +139,11 @@ public class PermisoRepository : GenericRepository<Permiso>, IPermisoRepository
                 _context.Set<RolPermiso>().RemoveRange(relacionesPermiso);
             }
 
-            // Eliminar el permiso
-            _dbSet.Remove(permiso);
-
+            // Eliminar el permiso usando el método base
+            await RemoveAsync(permiso);
+            
             // Guardar cambios
-            await _context.SaveChangesAsync();
+            await SaveChangesAsync();
             return true;
         }
         catch (Exception)
