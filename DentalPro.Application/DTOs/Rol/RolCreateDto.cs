@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace DentalPro.Application.DTOs.Rol;
 
 /// <summary>
@@ -14,4 +17,9 @@ public class RolCreateDto
     /// Descripción opcional del rol
     /// </summary>
     public string? Descripcion { get; set; }
+    
+    /// <summary>
+    /// IDs de los permisos a asignar a este rol
+    /// </summary>
+    public IEnumerable<Guid>? PermisoIds { get; set; }
 }

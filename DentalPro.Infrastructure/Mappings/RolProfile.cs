@@ -20,7 +20,7 @@ public class RolProfile : Profile
         
         // Relación Usuario-Rol
         CreateMap<UsuarioRol, RolDetailDto>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.IdRol))
+            .ForMember(dest => dest.IdRol, opt => opt.MapFrom(src => src.IdRol))
             .ForMember(dest => dest.Nombre, opt => opt.MapFrom(src => src.Rol != null ? src.Rol.Nombre : string.Empty));
     }
 }

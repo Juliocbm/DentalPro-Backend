@@ -17,26 +17,4 @@ public class UsuarioDto
     /// Lista de roles con información completa (ID y nombre)
     /// </summary>
     public List<RolDetailDto> Roles { get; set; } = new();
-    
-    // DEPRECATED: Para mantener compatibilidad con el frontend existente
-    // Será removido en futuras versiones
-    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
-    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    [Obsolete("Use Roles property instead")]
-    public List<string> RolesLegacy
-    {
-        get => Roles?.Select(r => r.Nombre).ToList() ?? new List<string>();
-        set {} // Setter vacío para deserialización
-    }
-    
-    // DEPRECATED: Para mantener compatibilidad con el frontend existente
-    // Será removido en futuras versiones
-    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
-    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    [Obsolete("Use Roles property instead")]
-    public List<Guid> RolIds
-    {
-        get => Roles?.Select(r => r.Id).ToList() ?? new List<Guid>();
-        set {} // Setter vacío para deserialización
-    }
 }
