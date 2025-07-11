@@ -34,6 +34,7 @@ public static class ErrorMessages
     public const string InvalidEmailFormat = "El formato del correo electrónico es inválido.";
     public const string PasswordMismatch = "Las contraseñas no coinciden.";
     public const string InvalidPasswordFormat = "La contraseña debe tener al menos 8 caracteres, incluir una letra mayúscula, una minúscula y un número.";
+    public const string InvalidId = "El identificador proporcionado no es válido.";
     
     // Mensajes específicos para pacientes
     public const string ConsultorioRequired = "Se requiere un consultorio válido.";

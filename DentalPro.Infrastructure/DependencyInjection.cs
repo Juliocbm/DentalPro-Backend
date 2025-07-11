@@ -36,6 +36,9 @@ public static class DependencyInjection
         
         // Registrar servicios
         services.AddScoped<IAuthService, AuthService>();
+        
+        // Servicios de usuario
+        services.AddScoped<IUsuarioManagementService, UsuarioManagementService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<IRolService, RolService>();
         // Servicios de permisos especializados

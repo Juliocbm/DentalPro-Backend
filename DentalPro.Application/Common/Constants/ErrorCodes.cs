@@ -28,6 +28,7 @@ public static class ErrorCodes
     public const string ValidationFailed = "ERR-4000";
     public const string InvalidModelState = "ERR-4001";
     public const string MissingRequiredField = "ERR-4002";
+    public const string InvalidId = "ERR-4003";
     
     // Errores de recursos - Rango 5000
     public const string ResourceNotFound = "ERR-5000";
