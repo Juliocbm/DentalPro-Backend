@@ -24,6 +24,11 @@ public class UsuarioUpdateDto
     public string Correo { get; set; } = null!;
     
     /// <summary>
+    /// Número telefónico del usuario (opcional)
+    /// </summary>
+    public string? Telefono { get; set; }
+    
+    /// <summary>
     /// Estado del usuario (activo/inactivo)
     /// </summary>
     public bool Activo { get; set; }

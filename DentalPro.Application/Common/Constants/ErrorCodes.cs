@@ -18,6 +18,8 @@ public static class ErrorCodes
     public const string Unauthorized = "ERR-2004";
     public const string RateLimitExceeded = "ERR-2005";
     public const string TooManyLoginAttempts = "ERR-2006";
+    public const string AccountDisabled = "ERR-2007";
+    public const string AccountTemporarilyLocked = "ERR-2008";
     
     // Errores de autorización - Rango 3000
     public const string InsufficientPermissions = "ERR-3000";

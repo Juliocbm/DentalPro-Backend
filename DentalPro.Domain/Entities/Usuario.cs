@@ -13,6 +13,11 @@ public class Usuario
     public string Correo { get; set; } = null!;
     public string PasswordHash { get; set; } = null!;
     public bool Activo { get; set; }
+    public DateTime FechaCreacion { get; set; }
+    public DateTime? UltimoAcceso { get; set; }
+    public string? Telefono { get; set; }
+    public int IntentosFallidos { get; set; }
+    public DateTime? BloqueoHasta { get; set; }
 
     public Guid IdConsultorio { get; set; }
     public Consultorio? Consultorio { get; set; }

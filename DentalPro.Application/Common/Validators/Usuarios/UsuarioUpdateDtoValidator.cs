@@ -32,6 +32,11 @@ public class UsuarioUpdateDtoValidator : AbstractValidator<UsuarioUpdateDto>
             .MustAsync(async (model, email, cancellation) => 
                 !await usuarioService.ExistsByEmailExceptCurrentAsync(email, model.IdUsuario))
                 .WithMessage("El correo electrónico ya está en uso por otro usuario");
+                
+        RuleFor(x => x.Telefono)
+            .MaximumLength(20).WithMessage("El teléfono no debe exceder los 20 caracteres")
+            .Matches(@"^[0-9+\-\s]*$").WithMessage("El teléfono solo debe contener números, espacios, + o -")
+            .When(x => !string.IsNullOrEmpty(x.Telefono));
 
         RuleFor(x => x.RolIds)
             .NotNull().WithMessage("La lista de roles no puede ser nula")

@@ -27,6 +27,11 @@ public class UsuarioCreateDtoValidator : AbstractValidator<UsuarioCreateDto>
             .MustAsync(async (correo, cancellation) => 
                 !await usuarioService.ExistsByEmailAsync(correo))
                 .WithMessage("El correo electrónico ya está en uso");
+                
+        RuleFor(x => x.Telefono)
+            .MaximumLength(20).WithMessage("El teléfono no debe exceder los 20 caracteres")
+            .Matches(@"^[0-9+\-\s]*$").WithMessage("El teléfono solo debe contener números, espacios, + o -")
+            .When(x => !string.IsNullOrEmpty(x.Telefono));
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("La contraseña es requerida")

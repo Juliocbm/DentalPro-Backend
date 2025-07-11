@@ -15,7 +15,16 @@ public class UsuarioProfile : Profile
         CreateMap<Usuario, UsuarioDto>();
         
         // DTO -> Entity
-        CreateMap<UsuarioCreateDto, Usuario>();
-        CreateMap<UsuarioUpdateDto, Usuario>();
+        CreateMap<UsuarioCreateDto, Usuario>()
+            .ForMember(dest => dest.FechaCreacion, opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.UltimoAcceso, opt => opt.Ignore())
+            .ForMember(dest => dest.IntentosFallidos, opt => opt.MapFrom(src => 0))
+            .ForMember(dest => dest.BloqueoHasta, opt => opt.Ignore());
+            
+        CreateMap<UsuarioUpdateDto, Usuario>()
+            .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore())
+            .ForMember(dest => dest.UltimoAcceso, opt => opt.Ignore())
+            .ForMember(dest => dest.IntentosFallidos, opt => opt.Ignore())
+            .ForMember(dest => dest.BloqueoHasta, opt => opt.Ignore());
     }
 }

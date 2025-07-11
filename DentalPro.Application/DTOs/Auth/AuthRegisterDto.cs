@@ -23,5 +23,8 @@ public class AuthRegisterDto
     [Required(ErrorMessage = "El ID del consultorio es requerido")]
     public Guid IdConsultorio { get; set; }
     
+    [StringLength(20, ErrorMessage = "El teléfono no puede tener más de 20 caracteres")]
+    public string? Telefono { get; set; }
+    
     public List<string> Roles { get; set; } = new();
 }

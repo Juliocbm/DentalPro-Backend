@@ -300,6 +300,7 @@ namespace DentalPro.Infrastructure.Services
             existingUser.Nombre = usuarioUpdateDto.Nombre;
             existingUser.Correo = usuarioUpdateDto.Correo;
             existingUser.Activo = usuarioUpdateDto.Activo;
+            existingUser.Telefono = usuarioUpdateDto.Telefono;
             
             // Guardar los cambios en el usuario
             await _usuarioRepository.UpdateAsync(existingUser);
@@ -335,12 +336,14 @@ namespace DentalPro.Infrastructure.Services
                     Original = new {
                         Nombre = existingUser.Nombre,
                         Correo = existingUser.Correo,
+                        Telefono = existingUser.Telefono,
                         Activo = existingUser.Activo,
                         RolesCount = currentRoles.Count
                     },
                     Actualizado = new {
                         Nombre = usuarioUpdateDto.Nombre,
                         Correo = usuarioUpdateDto.Correo,
+                        Telefono = usuarioUpdateDto.Telefono,
                         Activo = usuarioUpdateDto.Activo,
                         RolesCount = usuarioUpdateDto.RolIds?.Count() ?? 0
                     }

@@ -23,38 +23,122 @@ public class AuthService : IAuthService
     private readonly IConfiguration _config;
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IRolRepository _rolRepository;
+    private readonly IAuditService _auditService;
     
     // Constantes para tokens
     private readonly TimeSpan _accessTokenDuration;
     private readonly TimeSpan _refreshTokenDuration;
+    
+    // Configuraciones de seguridad
+    private readonly int _maxIntentosFallidos;
+    private readonly TimeSpan _duracionBloqueo;
 
     public AuthService(ApplicationDbContext context, IConfiguration config, 
-        IUsuarioRepository usuarioRepository, IRolRepository rolRepository)
+        IUsuarioRepository usuarioRepository, IRolRepository rolRepository, IAuditService auditService)
     {
         _context = context;
         _config = config;
         _usuarioRepository = usuarioRepository;
         _rolRepository = rolRepository;
+        _auditService = auditService;
 
         // Configuración de duración de tokens (valores por defecto si no están configurados)
         _accessTokenDuration = TimeSpan.FromMinutes(double.TryParse(_config["Jwt:AccessTokenDurationMinutes"], out double accessTokenMinutes) 
             ? accessTokenMinutes : 30);
         _refreshTokenDuration = TimeSpan.FromDays(double.TryParse(_config["Jwt:RefreshTokenDurationDays"], out double refreshTokenDays) 
             ? refreshTokenDays : 7);
+            
+        // Configuración de seguridad para bloqueos de cuenta
+        _maxIntentosFallidos = int.TryParse(_config["Security:MaxLoginAttempts"], out int maxAttempts) 
+            ? maxAttempts : 5;
+        _duracionBloqueo = TimeSpan.FromMinutes(double.TryParse(_config["Security:LockoutDurationMinutes"], out double lockoutMinutes) 
+            ? lockoutMinutes : 15);
     }
 
     public async Task<AuthLoginResponseDto> LoginAsync(AuthLoginDto request)
     {
+        // Buscar usuario por correo, sin filtrar por activo para poder comprobar bloqueos
         var user = await _context.Usuarios
             .Include(u => u.Roles)
             .ThenInclude(ur => ur.Rol)
-            .FirstOrDefaultAsync(u => u.Correo == request.Correo && u.Activo);
+            .FirstOrDefaultAsync(u => u.Correo == request.Correo);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        // Si no existe el usuario, registrar el intento y lanzar excepción genérica
+        if (user == null)
+        {
+            await _auditService.RegisterActionAsync(
+                "LoginFailure", 
+                "Auth", 
+                Guid.Empty, 
+                Guid.Empty,
+                System.Text.Json.JsonSerializer.Serialize(new { Correo = request.Correo, Motivo = "UsuarioInexistente" })
+            );
+            
             throw new BadRequestException(ErrorMessages.InvalidCredentials, ErrorCodes.InvalidCredentials);
+        }
+        
+        // Verificar si la cuenta está bloqueada
+        if (user.BloqueoHasta.HasValue && user.BloqueoHasta > DateTime.UtcNow)
+        {
+            var tiempoRestante = user.BloqueoHasta.Value - DateTime.UtcNow;
+            
+            await _auditService.RegisterActionAsync(
+                "LoginBlocked", 
+                "Auth", 
+                user.IdUsuario, 
+                user.IdUsuario,
+                System.Text.Json.JsonSerializer.Serialize(new { 
+                    Correo = user.Correo, 
+                    BloqueoHasta = user.BloqueoHasta,
+                    MinutosRestantes = Math.Ceiling(tiempoRestante.TotalMinutes)
+                })
+            );
+            
+            throw new TooManyRequestsException(
+                $"La cuenta está bloqueada temporalmente. Intente nuevamente en {Math.Ceiling(tiempoRestante.TotalMinutes)} minutos.",
+                ErrorCodes.AccountTemporarilyLocked);
+        }
+        
+        // Verificar si la cuenta está activa
+        if (!user.Activo)
+        {
+            await _auditService.RegisterActionAsync(
+                "LoginFailure", 
+                "Auth", 
+                user.IdUsuario, 
+                user.IdUsuario,
+                System.Text.Json.JsonSerializer.Serialize(new { Correo = user.Correo, Motivo = "CuentaInactiva" })
+            );
+            
+            throw new BadRequestException("La cuenta de usuario está desactivada", ErrorCodes.AccountDisabled);
+        }
 
-        // Revocar todos los tokens de refresco existentes para este usuario como medida de seguridad
+        // Verificar la contraseña
+        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            // Registrar intento fallido y actualizar contador
+            await HandleFailedLoginAttemptAsync(user);
+            
+            throw new BadRequestException(ErrorMessages.InvalidCredentials, ErrorCodes.InvalidCredentials);
+        }
+
+        // Reiniciar contador de intentos fallidos y actualizar último acceso
+        user.IntentosFallidos = 0;
+        user.UltimoAcceso = DateTime.UtcNow;
+        user.BloqueoHasta = null;
+        await _context.SaveChangesAsync();
+
+        // Revocar todos los tokens de refresco existentes como medida de seguridad
         await _usuarioRepository.RevokeAllRefreshTokensAsync(user.IdUsuario);
+        
+        // Registrar login exitoso
+        await _auditService.RegisterActionAsync(
+            "LoginSuccess", 
+            "Auth", 
+            user.IdUsuario, 
+            user.IdUsuario,
+            System.Text.Json.JsonSerializer.Serialize(new { Timestamp = DateTime.UtcNow })
+        );
         
         // Generar tokens nuevos
         var tokenExpiracion = DateTime.UtcNow.Add(_accessTokenDuration);
@@ -100,9 +184,14 @@ public class AuthService : IAuthService
             IdUsuario = Guid.NewGuid(),
             Nombre = request.Nombre,
             Correo = request.Correo,
+            Telefono = request.Telefono,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             IdConsultorio = request.IdConsultorio,
-            Activo = true
+            Activo = true,
+            FechaCreacion = DateTime.UtcNow,
+            UltimoAcceso = null,
+            IntentosFallidos = 0,
+            BloqueoHasta = null
         };
 
         // Agregar el usuario a la base de datos
@@ -137,6 +226,7 @@ public class AuthService : IAuthService
             IdUsuario = newUser.IdUsuario,
             Nombre = newUser.Nombre,
             Correo = newUser.Correo,
+            Telefono = newUser.Telefono,
             Roles = userRoles.ToList()
         };
     }
@@ -193,6 +283,52 @@ public class AuthService : IAuthService
         }
         
         await _usuarioRepository.RevokeRefreshTokenAsync(token);
+    }
+
+    /// <summary>
+    /// Maneja un intento de inicio de sesión fallido, incrementando el contador
+    /// y bloqueando temporalmente la cuenta si es necesario
+    /// </summary>
+    private async Task HandleFailedLoginAttemptAsync(Usuario user)
+    {
+        // Incrementar contador de intentos fallidos
+        user.IntentosFallidos++;
+        
+        // Si supera el máximo de intentos, bloquear temporalmente la cuenta
+        if (user.IntentosFallidos >= _maxIntentosFallidos)
+        {
+            user.BloqueoHasta = DateTime.UtcNow.Add(_duracionBloqueo);
+            
+            // Registrar bloqueo en auditoría
+            await _auditService.RegisterActionAsync(
+                "AccountLocked", 
+                "Auth", 
+                user.IdUsuario, 
+                user.IdUsuario,
+                System.Text.Json.JsonSerializer.Serialize(new { 
+                    IntentosFallidos = user.IntentosFallidos,
+                    BloqueoHasta = user.BloqueoHasta,
+                    DuracionBloqueoMinutos = _duracionBloqueo.TotalMinutes
+                })
+            );
+        }
+        else
+        {
+            // Registrar intento fallido en auditoría
+            await _auditService.RegisterActionAsync(
+                "LoginFailure", 
+                "Auth", 
+                user.IdUsuario, 
+                user.IdUsuario,
+                System.Text.Json.JsonSerializer.Serialize(new { 
+                    IntentosFallidos = user.IntentosFallidos,
+                    MaxIntentos = _maxIntentosFallidos
+                })
+            );
+        }
+        
+        // Guardar cambios en la base de datos
+        await _context.SaveChangesAsync();
     }
 
     #region Métodos privados para manejo de tokens

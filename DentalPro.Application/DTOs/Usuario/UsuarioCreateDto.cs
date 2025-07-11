@@ -29,6 +29,11 @@ public class UsuarioCreateDto
     public string ConfirmPassword { get; set; } = null!;
     
     /// <summary>
+    /// Número telefónico del usuario (opcional)
+    /// </summary>
+    public string? Telefono { get; set; }
+    
+    /// <summary>
     /// ID del consultorio al que pertenece el usuario
     /// </summary>
     public Guid IdConsultorio { get; set; }

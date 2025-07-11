@@ -10,7 +10,10 @@ public class UsuarioDto
     public Guid IdUsuario { get; set; }
     public string Nombre { get; set; } = null!;
     public string Correo { get; set; } = null!;
+    public string? Telefono { get; set; }
     public bool Activo { get; set; }
+    public DateTime FechaCreacion { get; set; }
+    public DateTime? UltimoAcceso { get; set; }
     public Guid IdConsultorio { get; set; }
     
     /// <summary>
