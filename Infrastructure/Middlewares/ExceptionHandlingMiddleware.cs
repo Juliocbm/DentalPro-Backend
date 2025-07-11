@@ -100,6 +100,13 @@ public class ExceptionHandlingMiddleware
                 errorResponse.Error = "Bad Request"; // Para compatibilidad con Angular
                 break;
             
+            case TooManyRequestsException tooManyEx:
+                errorResponse.StatusCode = (int)HttpStatusCode.TooManyRequests; // 429
+                errorResponse.ErrorCode = ErrorCodes.RateLimitExceeded;
+                errorResponse.Message = tooManyEx.Message;
+                errorResponse.Error = "Too Many Requests"; // Para compatibilidad con Angular
+                break;
+            
             // Caso base para cualquier ApplicationException que no sea un tipo específico arriba
             case Application.Common.Exceptions.ApplicationException appEx:
                 errorResponse.StatusCode = (int)HttpStatusCode.BadRequest;

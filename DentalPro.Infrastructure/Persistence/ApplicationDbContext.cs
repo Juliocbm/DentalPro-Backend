@@ -34,6 +34,7 @@ namespace DentalPro.Infrastructure.Persistence
         public DbSet<RolPermiso> RolesPermisos => Set<RolPermiso>();
         public DbSet<UsuarioPermiso> UsuariosPermisos => Set<UsuarioPermiso>();
         public DbSet<DoctorDetail> DoctorDetails => Set<DoctorDetail>();
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
         // Entidades para el sistema de permisos y roles
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -94,6 +95,31 @@ namespace DentalPro.Infrastructure.Persistence
                 .HasOne(up => up.Permiso)
                 .WithMany(p => p.Usuarios)
                 .HasForeignKey(up => up.IdPermiso);
+                
+            // Configuración de AuditLog
+            modelBuilder.Entity<AuditLog>(builder =>
+            {
+                builder.ToTable("AuditLogs", "auditoria");
+                
+                builder.HasKey(a => a.Id);
+                
+                builder.Property(a => a.Action)
+                    .IsRequired()
+                    .HasMaxLength(50);
+                    
+                builder.Property(a => a.EntityType)
+                    .IsRequired()
+                    .HasMaxLength(100);
+                    
+                builder.Property(a => a.Details)
+                    .HasMaxLength(4000);
+                    
+                builder.Property(a => a.IpAddress)
+                    .HasMaxLength(50);
+                    
+                // Los registros de auditoría no deben filtrarse por consultorio
+                // en las consultas globales - se filtrará explícitamente cuando sea necesario
+            });
 
             // Filtro global por IdConsultorio para entidades que lo incluyan
             // Solo aplicar el filtro si tenemos un ID de consultorio

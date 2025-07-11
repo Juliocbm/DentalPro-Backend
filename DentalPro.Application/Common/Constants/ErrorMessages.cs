@@ -17,6 +17,10 @@ public static class ErrorMessages
     public const string InvalidRefreshToken = "El token de refresco es inválido o ha expirado.";
     public const string TokenRevoked = "El token de refresco ha sido revocado.";
     public const string RefreshTokenRequired = "Se requiere un token de refresco válido.";
+    public const string TooManyRequests = "Ha excedido el número de intentos permitidos. Por favor, intente nuevamente más tarde.";
+    public const string TooManyAttempts = "Demasiados intentos fallidos. Su cuenta ha sido bloqueada temporalmente.";
+    public const string LoginBlocked = "Los intentos de acceso están temporalmente bloqueados. Por favor, intente nuevamente en unos minutos.";
+    
     
     // Mensajes de autorización
     public const string UnauthorizedAccess = "No está autorizado para realizar esta operación.";

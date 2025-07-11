@@ -16,6 +16,8 @@ public static class ErrorCodes
     public const string TokenExpired = "ERR-2002";
     public const string InvalidToken = "ERR-2003";
     public const string Unauthorized = "ERR-2004";
+    public const string RateLimitExceeded = "ERR-2005";
+    public const string TooManyLoginAttempts = "ERR-2006";
     
     // Errores de autorización - Rango 3000
     public const string InsufficientPermissions = "ERR-3000";

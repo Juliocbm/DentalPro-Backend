@@ -15,6 +15,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using DentalPro.Application.Interfaces.IServices;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using DentalPro.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -151,6 +152,9 @@ builder.Services.AddScoped<IAuthorizationHandler, PermisoAuthorizationHandler>()
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermisoPolicyProvider>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Registrar servicios de seguridad (Rate Limiting y Audit Logs)
+builder.Services.AddSecurityServices(builder.Configuration);
 
 // Registrar AutoMapper con todos los perfiles del ensamblado de infraestructura
 // Esto registrará automáticamente CitaProfile, RecordatorioProfile, UsuarioProfile, RolProfile y PacienteProfile

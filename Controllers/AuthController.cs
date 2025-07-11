@@ -4,6 +4,7 @@ using DentalPro.Application.Common.Permissions;
 using DentalPro.Application.DTOs.Auth;
 using DentalPro.Application.Interfaces.IServices;
 using DentalPro.Api.Infrastructure.Authorization;
+using DentalPro.Api.Infrastructure.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,6 +22,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [RateLimiting("login")]
     public async Task<ActionResult<AuthLoginResponseDto>> Login([FromBody] AuthLoginDto request)
     {
         var result = await _authService.LoginAsync(request);
@@ -32,6 +34,7 @@ public class AuthController : ControllerBase
     }
     
     [HttpPost("register")]
+    [RateLimiting("register")]
     public async Task<ActionResult<AuthRegisterResponseDto>> Register([FromBody] AuthRegisterDto request)
     {
         var result = await _authService.RegisterAsync(request);
@@ -43,6 +46,7 @@ public class AuthController : ControllerBase
     }
     
     [HttpPost("refresh-token")]
+    [RateLimiting("refresh-token")]
     public async Task<ActionResult<AuthLoginResponseDto>> RefreshToken([FromBody] AuthRefreshTokenDto request)
     {
         var result = await _authService.RefreshTokenAsync(request);
