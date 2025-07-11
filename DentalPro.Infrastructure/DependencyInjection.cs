@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using DentalPro.Application.Common.Validators.Async;
 using DentalPro.Infrastructure.Persistence.Interceptors;
 using Microsoft.Extensions.Logging;
@@ -83,6 +84,13 @@ public static class DependencyInjection
         services.AddScoped<RecordatorioExistenceAsyncValidator>();
         // Los validadores genéricos no necesitan ser registrados directamente
         // ya que se crean mediante factory methods en los validadores de DTOs
+        
+        // Registrar servicio de limitación de tasas (rate limiting)
+        services.AddScoped<RateLimitingService>();
+        services.Configure<RateLimitingOptions>(options => {
+            options.MaxAttempts = 5;
+            options.WindowMinutes = 15;
+        });
         
         return services;
     }
