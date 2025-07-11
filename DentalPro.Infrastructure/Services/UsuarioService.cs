@@ -31,6 +31,7 @@ public class UsuarioService : IUsuarioService
     private readonly ILogger<UsuarioService> _logger;
     private readonly IUsuarioManagementService _usuarioManagementService;
     private readonly IUsuarioRoleService _usuarioRoleService;
+    private readonly IUsuarioPermisoService _usuarioPermisoService;
 
     public UsuarioService(
         IUsuarioRepository usuarioRepository, 
@@ -41,6 +42,7 @@ public class UsuarioService : IUsuarioService
         ICurrentUserService currentUserService,
         IUsuarioManagementService usuarioManagementService,
         IUsuarioRoleService usuarioRoleService,
+        IUsuarioPermisoService usuarioPermisoService,
         ILogger<UsuarioService> logger)
     {
         _usuarioRepository = usuarioRepository ?? throw new ArgumentNullException(nameof(usuarioRepository));
@@ -51,6 +53,7 @@ public class UsuarioService : IUsuarioService
         _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         _usuarioManagementService = usuarioManagementService ?? throw new ArgumentNullException(nameof(usuarioManagementService));
         _usuarioRoleService = usuarioRoleService ?? throw new ArgumentNullException(nameof(usuarioRoleService));
+        _usuarioPermisoService = usuarioPermisoService ?? throw new ArgumentNullException(nameof(usuarioPermisoService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -414,35 +417,18 @@ public class UsuarioService : IUsuarioService
     /// </summary>
     public async Task<bool> AsignarPermisoAsync(Guid idUsuario, string nombrePermiso)
     {
-        // Verificar permiso para administrar permisos de usuario
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.AssignPermisos))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó asignar permiso sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-
-        _logger.LogInformation("Asignando permiso {PermisoNombre} a usuario {UserId}", nombrePermiso, idUsuario);
+        _logger.LogInformation("Delegando AsignarPermisoAsync a UsuarioPermisoService para usuario {UserId} y permiso {PermisoNombre}", 
+            idUsuario, nombrePermiso);
         
         try
         {
-            // Verificar que el permiso existe
-            var permiso = await _permisoRepository.GetByNombreAsync(nombrePermiso);
-            if (permiso == null)
-            {
-                _logger.LogWarning("No se puede asignar permiso: {PermisoNombre} no existe", nombrePermiso);
-                throw new NotFoundException("Permiso", nombrePermiso);
-            }
-            
-            // Asignar el permiso
-            var result = await _usuarioRepository.AsignarPermisoAsync(idUsuario, permiso.IdPermiso);
-            await _usuarioRepository.SaveChangesAsync();
-            
-            return result;
+            return await _usuarioPermisoService.AsignarPermisoAsync(idUsuario, nombrePermiso);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al asignar permiso {PermisoNombre} a usuario {UserId}", nombrePermiso, idUsuario);
-            throw;
+            _logger.LogError(ex, "Error al delegar AsignarPermisoAsync a UsuarioPermisoService para usuario {UserId} y permiso {PermisoNombre}", 
+                idUsuario, nombrePermiso);
+            throw; // Re-throw para mantener la pila de excepción
         }
     }
     
@@ -451,42 +437,17 @@ public class UsuarioService : IUsuarioService
     /// </summary>
     public async Task<bool> AsignarPermisoAsync(Guid idUsuario, Guid idPermiso)
     {
-        // Verificar permiso para administrar permisos de usuario
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.AssignPermisos))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó asignar permiso sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-        
-        _logger.LogInformation("Asignando permiso con ID {PermisoId} a usuario {UserId}", idPermiso, idUsuario);
-        
+        _logger.LogInformation("Delegando AsignarPermisoAsync por ID a UsuarioPermisoService para usuario {UserId} y permiso {PermisoId}", 
+            idUsuario, idPermiso);
+            
         try
         {
-            // Verificar que el usuario existe
-            var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
-            if (usuario == null)
-            {
-                _logger.LogWarning("No se puede asignar permiso: usuario {UserId} no existe", idUsuario);
-                throw new NotFoundException("Usuario", idUsuario);
-            }
-            
-            // Verificar que el permiso existe
-            var permiso = await _permisoRepository.GetByIdAsync(idPermiso);
-            if (permiso == null)
-            {
-                _logger.LogWarning("No se puede asignar permiso: permiso con ID {PermisoId} no existe", idPermiso);
-                throw new NotFoundException("Permiso", idPermiso);
-            }
-            
-            // Asignar el permiso
-            var result = await _usuarioRepository.AsignarPermisoAsync(idUsuario, idPermiso);
-            await _usuarioRepository.SaveChangesAsync();
-            
-            return result;
+            return await _usuarioPermisoService.AsignarPermisoAsync(idUsuario, idPermiso);
         }
-        catch (Exception ex) when (!(ex is NotFoundException) && !(ex is ForbiddenAccessException))
+        catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al asignar permiso con ID {PermisoId} a usuario {UserId}", idPermiso, idUsuario);
+            _logger.LogError(ex, "Error al delegar AsignarPermisoAsync por ID a UsuarioPermisoService para usuario {UserId} y permiso {PermisoId}", 
+                idUsuario, idPermiso);
             throw;
         }
     }
@@ -496,42 +457,17 @@ public class UsuarioService : IUsuarioService
     /// </summary>
     public async Task<bool> RemoverPermisoAsync(Guid idUsuario, string nombrePermiso)
     {
-        // Verificar permiso para administrar permisos de usuario
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.RemovePermisos))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó remover permiso sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-        
-        _logger.LogInformation("Removiendo permiso {PermisoNombre} de usuario {UserId}", nombrePermiso, idUsuario);
+        _logger.LogInformation("Delegando RemoverPermisoAsync a UsuarioPermisoService para usuario {UserId} y permiso {PermisoNombre}", 
+            idUsuario, nombrePermiso);
         
         try
         {
-            // Verificar que el usuario existe
-            var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
-            if (usuario == null)
-            {
-                _logger.LogWarning("No se puede remover permiso: usuario {UserId} no existe", idUsuario);
-                throw new NotFoundException("Usuario", idUsuario);
-            }
-            
-            // Verificar que el permiso existe
-            var permiso = await _permisoRepository.GetByNombreAsync(nombrePermiso);
-            if (permiso == null)
-            {
-                _logger.LogWarning("No se puede remover permiso: {PermisoNombre} no existe", nombrePermiso);
-                throw new NotFoundException("Permiso", nombrePermiso);
-            }
-            
-            // Remover el permiso
-            var result = await _usuarioRepository.RemoverPermisoAsync(idUsuario, permiso.IdPermiso);
-            await _usuarioRepository.SaveChangesAsync();
-            
-            return result;
+            return await _usuarioPermisoService.RemoverPermisoAsync(idUsuario, nombrePermiso);
         }
-        catch (Exception ex) when (!(ex is NotFoundException) && !(ex is ForbiddenAccessException))
+        catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al remover permiso {PermisoNombre} de usuario {UserId}", nombrePermiso, idUsuario);
+            _logger.LogError(ex, "Error al delegar RemoverPermisoAsync a UsuarioPermisoService para usuario {UserId} y permiso {PermisoNombre}", 
+                idUsuario, nombrePermiso);
             throw;
         }
     }
@@ -541,42 +477,17 @@ public class UsuarioService : IUsuarioService
     /// </summary>
     public async Task<bool> RemoverPermisoAsync(Guid idUsuario, Guid idPermiso)
     {
-        // Verificar permiso para administrar permisos de usuario
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.RemovePermisos))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó remover permiso sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-
-        _logger.LogInformation("Removiendo permiso con ID {PermisoId} de usuario {UserId}", idPermiso, idUsuario);
+        _logger.LogInformation("Delegando RemoverPermisoAsync por ID a UsuarioPermisoService para usuario {UserId} y permiso {PermisoId}", 
+            idUsuario, idPermiso);
         
         try
         {
-            // Verificar que el usuario existe
-            var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
-            if (usuario == null)
-            {
-                _logger.LogWarning("No se puede remover permiso: usuario {UserId} no existe", idUsuario);
-                throw new NotFoundException("Usuario", idUsuario);
-            }
-            
-            // Verificar que el permiso existe
-            var permiso = await _permisoRepository.GetByIdAsync(idPermiso);
-            if (permiso == null)
-            {
-                _logger.LogWarning("No se puede remover permiso: permiso con ID {PermisoId} no existe", idPermiso);
-                throw new NotFoundException("Permiso", idPermiso);
-            }
-            
-            // Remover el permiso
-            var result = await _usuarioRepository.RemoverPermisoAsync(idUsuario, idPermiso);
-            await _usuarioRepository.SaveChangesAsync();
-            
-            return result;
+            return await _usuarioPermisoService.RemoverPermisoAsync(idUsuario, idPermiso);
         }
-        catch (Exception ex) when (!(ex is NotFoundException) && !(ex is ForbiddenAccessException))
+        catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al remover permiso con ID {PermisoId} de usuario {UserId}", idPermiso, idUsuario);
+            _logger.LogError(ex, "Error al delegar RemoverPermisoAsync por ID a UsuarioPermisoService para usuario {UserId} y permiso {PermisoId}", 
+                idUsuario, idPermiso);
             throw;
         }
     }
@@ -586,34 +497,15 @@ public class UsuarioService : IUsuarioService
     /// </summary>
     public async Task<IEnumerable<string>> GetPermisosAsync(Guid idUsuario)
     {
-        // Verificar permiso para ver permisos de usuario
-        // El usuario puede ver sus propios permisos o si tiene el permiso específico
-        var currentUserId = _currentUserService.GetCurrentUserId();
-        if (currentUserId != idUsuario && !await _currentUserService.HasPermisoAsync(UsuariosPermissions.ViewPermisos))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {CurrentUserId} intentó ver permisos del usuario {UserId} sin el permiso requerido", 
-                currentUserId, idUsuario);
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-        
-        _logger.LogInformation("Obteniendo permisos para el usuario {UserId}", idUsuario);
+        _logger.LogInformation("Delegando GetPermisosAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
         
         try
         {
-            // Verificar que el usuario existe
-            var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
-            if (usuario == null)
-            {
-                _logger.LogWarning("No se pueden obtener permisos: usuario {UserId} no existe", idUsuario);
-                throw new NotFoundException("Usuario", idUsuario);
-            }
-            
-            // Obtener los permisos
-            return await _usuarioRepository.GetUserPermisosAsync(idUsuario);
+            return await _usuarioPermisoService.GetPermisosAsync(idUsuario);
         }
-        catch (Exception ex) when (!(ex is NotFoundException) && !(ex is ForbiddenAccessException))
+        catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al obtener permisos del usuario {UserId}", idUsuario);
+            _logger.LogError(ex, "Error al delegar GetPermisosAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
             throw;
         }
     }
@@ -622,108 +514,47 @@ public class UsuarioService : IUsuarioService
     
     public async Task<IEnumerable<PermisoDto>> GetPermisosUsuarioAsync(Guid idUsuario)
     {
-        // Verificar permiso para ver permisos de usuarios
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.ViewPermisos))
+        _logger.LogInformation("Delegando GetPermisosUsuarioAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
+        
+        try
         {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó ver permisos de otro usuario sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+            return await _usuarioPermisoService.GetPermisosUsuarioAsync(idUsuario);
         }
-        
-        _logger.LogInformation("Obteniendo permisos para usuario {UserId}", idUsuario);
-        
-        // Verificar que el usuario existe
-        var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
-        if (usuario == null)
+        catch (Exception ex)
         {
-            _logger.LogWarning("No se pueden obtener permisos: usuario {UserId} no existe", idUsuario);
-            throw new NotFoundException("Usuario", idUsuario);
+            _logger.LogError(ex, "Error al delegar GetPermisosUsuarioAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
+            throw;
         }
-        
-        // Obtener objetos Permiso completos del usuario
-        var permisos = await _permisoService.GetPermisosByUsuarioIdAsync(idUsuario);
-        
-        // Mapear a DTOs
-        return _mapper.Map<IEnumerable<PermisoDto>>(permisos);
     }
     
     public async Task<bool> AsignarPermisosUsuarioAsync(Guid idUsuario, IEnumerable<Guid> idsPermisos)
     {
-        // Verificar permiso para asignar permisos
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.AssignPermisos))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó asignar permisos sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-
-        _logger.LogInformation("Asignando múltiples permisos a usuario {UserId}", idUsuario);
+        _logger.LogInformation("Delegando AsignarPermisosUsuarioAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
         
         try
         {
-            // Verificar que el usuario existe
-            var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
-            if (usuario == null)
-            {
-                _logger.LogWarning("No se pueden asignar permisos: usuario {UserId} no existe", idUsuario);
-                throw new NotFoundException("Usuario", idUsuario);
-            }
-            
-            // Verificar que todos los permisos existen
-            foreach (var idPermiso in idsPermisos)
-            {
-                var permiso = await _permisoRepository.GetByIdAsync(idPermiso);
-                if (permiso == null)
-                {
-                    _logger.LogWarning("No se pueden asignar permisos: permiso con ID {PermisoId} no existe", idPermiso);
-                    throw new NotFoundException("Permiso", idPermiso);
-                }
-            }
-            
-            // Asignar todos los permisos
-            var result = true;
-            foreach (var idPermiso in idsPermisos)
-            {
-                result = result && await _usuarioRepository.AsignarPermisoAsync(idUsuario, idPermiso);
-            }
-            
-            await _usuarioRepository.SaveChangesAsync();
-            
-            return result;
+            return await _usuarioPermisoService.AsignarPermisosUsuarioAsync(idUsuario, idsPermisos);
         }
-        catch (Exception ex) when (!(ex is NotFoundException) && !(ex is ForbiddenAccessException))
+        catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al asignar múltiples permisos a usuario {UserId}", idUsuario);
+            _logger.LogError(ex, "Error al delegar AsignarPermisosUsuarioAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
             throw;
         }
     }
     
     public async Task<bool> AsignarPermisosUsuarioByNombreAsync(Guid idUsuario, IEnumerable<string> nombresPermisos)
     {
-        _logger.LogInformation("Asignando múltiples permisos por nombre a usuario {UserId}", idUsuario);
+        _logger.LogInformation("Delegando AsignarPermisosUsuarioByNombreAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
         
-        // Verificar que el usuario existe
-        var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
-        if (usuario == null)
+        try
         {
-            _logger.LogWarning("No se pueden asignar permisos: usuario {UserId} no existe", idUsuario);
-            throw new NotFoundException("Usuario", idUsuario);
+            return await _usuarioPermisoService.AsignarPermisosUsuarioByNombreAsync(idUsuario, nombresPermisos);
         }
-        
-        // Verificar que todos los permisos existen y recopilar sus IDs
-        var idsPermisos = new List<Guid>();
-        foreach (var nombrePermiso in nombresPermisos)
+        catch (Exception ex)
         {
-            var permiso = await _permisoRepository.GetByNombreAsync(nombrePermiso);
-            if (permiso == null)
-            {
-                _logger.LogWarning("No se pueden asignar permisos: permiso {PermisoNombre} no existe", nombrePermiso);
-                throw new NotFoundException("Permiso", nombrePermiso);
-            }
-            
-            idsPermisos.Add(permiso.IdPermiso);
+            _logger.LogError(ex, "Error al delegar AsignarPermisosUsuarioByNombreAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
+            throw;
         }
-        
-        // Usar el método existente para asignar por IDs
-        return await AsignarPermisosUsuarioAsync(idUsuario, idsPermisos);
     }
     
     /// <summary>
@@ -731,50 +562,15 @@ public class UsuarioService : IUsuarioService
     /// </summary>
     public async Task<bool> RemoverPermisosUsuarioAsync(Guid idUsuario, IEnumerable<Guid> idsPermisos)
     {
-        // Verificar permiso para remover permisos
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.RemovePermisos))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó remover permisos sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-
-        _logger.LogInformation("Removiendo múltiples permisos de usuario {UserId}", idUsuario);
+        _logger.LogInformation("Delegando RemoverPermisosUsuarioAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
         
         try
         {
-            // Verificar que el usuario existe
-            var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
-            if (usuario == null)
-            {
-                _logger.LogWarning("No se pueden remover permisos: usuario {UserId} no existe", idUsuario);
-                throw new NotFoundException("Usuario", idUsuario);
-            }
-            
-            // Verificar que todos los permisos existen
-            foreach (var idPermiso in idsPermisos)
-            {
-                var permiso = await _permisoRepository.GetByIdAsync(idPermiso);
-                if (permiso == null)
-                {
-                    _logger.LogWarning("No se pueden remover permisos: permiso con ID {PermisoId} no existe", idPermiso);
-                    throw new NotFoundException("Permiso", idPermiso);
-                }
-            }
-            
-            // Remover todos los permisos
-            var result = true;
-            foreach (var idPermiso in idsPermisos)
-            {
-                result = result && await _usuarioRepository.RemoverPermisoAsync(idUsuario, idPermiso);
-            }
-            
-            await _usuarioRepository.SaveChangesAsync();
-            
-            return result;
+            return await _usuarioPermisoService.RemoverPermisosUsuarioAsync(idUsuario, idsPermisos);
         }
-        catch (Exception ex) when (!(ex is NotFoundException) && !(ex is ForbiddenAccessException))
+        catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al remover múltiples permisos de usuario {UserId}", idUsuario);
+            _logger.LogError(ex, "Error al delegar RemoverPermisosUsuarioAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
             throw;
         }
     }
@@ -784,45 +580,15 @@ public class UsuarioService : IUsuarioService
     /// </summary>
     public async Task<bool> RemoverPermisosUsuarioByNombreAsync(Guid idUsuario, IEnumerable<string> nombresPermisos)
     {
-        // Verificar permiso para remover permisos
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.RemovePermisos))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó remover permisos por nombre sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-
-        _logger.LogInformation("Removiendo múltiples permisos por nombre de usuario {UserId}", idUsuario);
+        _logger.LogInformation("Delegando RemoverPermisosUsuarioByNombreAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
         
         try
         {
-            // Verificar que el usuario existe
-            var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
-            if (usuario == null)
-            {
-                _logger.LogWarning("No se pueden remover permisos: usuario {UserId} no existe", idUsuario);
-                throw new NotFoundException("Usuario", idUsuario);
-            }
-            
-            // Verificar que todos los permisos existen y recopilar sus IDs
-            var idsPermisos = new List<Guid>();
-            foreach (var nombrePermiso in nombresPermisos)
-            {
-                var permiso = await _permisoRepository.GetByNombreAsync(nombrePermiso);
-                if (permiso == null)
-                {
-                    _logger.LogWarning("No se pueden remover permisos: permiso {PermisoNombre} no existe", nombrePermiso);
-                    throw new NotFoundException("Permiso", nombrePermiso);
-                }
-                
-                idsPermisos.Add(permiso.IdPermiso);
-            }
-            
-            // Usar el método existente para remover por IDs
-            return await RemoverPermisosUsuarioAsync(idUsuario, idsPermisos);
+            return await _usuarioPermisoService.RemoverPermisosUsuarioByNombreAsync(idUsuario, nombresPermisos);
         }
-        catch (Exception ex) when (!(ex is NotFoundException) && !(ex is ForbiddenAccessException))
+        catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al remover múltiples permisos por nombre de usuario {UserId}", idUsuario);
+            _logger.LogError(ex, "Error al delegar RemoverPermisosUsuarioByNombreAsync a UsuarioPermisoService para usuario {UserId}", idUsuario);
             throw;
         }
     }

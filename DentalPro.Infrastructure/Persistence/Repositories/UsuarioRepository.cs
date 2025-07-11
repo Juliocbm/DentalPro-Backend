@@ -228,6 +228,13 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
             .ToList() ?? new List<string>();
     }
     
+    // Método alias con nomenclatura estandarizada
+    public async Task<IEnumerable<string>> GetUsuarioPermisosAsync(Guid idUsuario)
+    {
+        // Delegar al método existente para mantener la lógica centralizada
+        return await GetUserPermisosAsync(idUsuario);
+    }
+    
     public async Task<bool> AsignarPermisoAsync(Guid idUsuario, string nombrePermiso)
     {
         var usuario = await _dbSet

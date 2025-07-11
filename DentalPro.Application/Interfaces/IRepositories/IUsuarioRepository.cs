@@ -22,6 +22,7 @@ public interface IUsuarioRepository : IGenericRepository<Usuario>
     
     // Gestión de permisos directos del usuario
     Task<IEnumerable<string>> GetUserPermisosAsync(Guid idUsuario);
+    Task<IEnumerable<string>> GetUsuarioPermisosAsync(Guid idUsuario); // Alias estandarizado
     Task<bool> AsignarPermisoAsync(Guid idUsuario, string nombrePermiso);
     Task<bool> RemoverPermisoAsync(Guid idUsuario, string nombrePermiso);
     Task<bool> AsignarPermisoAsync(Guid idUsuario, Guid idPermiso);
