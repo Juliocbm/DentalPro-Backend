@@ -40,6 +40,7 @@ public static class DependencyInjection
         // Servicios de usuario
         services.AddScoped<IUsuarioManagementService, UsuarioManagementService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
+        services.AddScoped<IUsuarioRoleService, UsuarioRoleService>();
         services.AddScoped<IRolService, RolService>();
         // Servicios de permisos especializados
         services.AddScoped<IPermisoCacheService, PermisoCacheService>();

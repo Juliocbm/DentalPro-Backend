@@ -21,6 +21,7 @@ public static class UsuariosPermissions
     public const string ChangeStatus = "usuarios.change-status";
     
     // Permisos para gestión de roles
+    public const string ViewRoles = "usuarios.roles.view";
     public const string AssignRoles = "usuarios.roles.assign";
     public const string RemoveRoles = "usuarios.roles.remove";
     

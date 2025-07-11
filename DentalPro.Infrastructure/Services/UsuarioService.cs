@@ -30,6 +30,7 @@ public class UsuarioService : IUsuarioService
     private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<UsuarioService> _logger;
     private readonly IUsuarioManagementService _usuarioManagementService;
+    private readonly IUsuarioRoleService _usuarioRoleService;
 
     public UsuarioService(
         IUsuarioRepository usuarioRepository, 
@@ -39,6 +40,7 @@ public class UsuarioService : IUsuarioService
         IMapper mapper,
         ICurrentUserService currentUserService,
         IUsuarioManagementService usuarioManagementService,
+        IUsuarioRoleService usuarioRoleService,
         ILogger<UsuarioService> logger)
     {
         _usuarioRepository = usuarioRepository ?? throw new ArgumentNullException(nameof(usuarioRepository));
@@ -48,6 +50,7 @@ public class UsuarioService : IUsuarioService
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         _usuarioManagementService = usuarioManagementService ?? throw new ArgumentNullException(nameof(usuarioManagementService));
+        _usuarioRoleService = usuarioRoleService ?? throw new ArgumentNullException(nameof(usuarioRoleService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -302,22 +305,15 @@ public class UsuarioService : IUsuarioService
     /// </summary>
     public async Task<bool> AsignarRolAsync(Guid idUsuario, string nombreRol)
     {
-        // Verificar permiso para administrar roles de usuario
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.AssignRoles))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó asignar rol sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-
-        _logger.LogInformation("Asignando rol {RolNombre} a usuario {UserId}", nombreRol, idUsuario);
+        _logger.LogInformation("Delegando AsignarRolAsync a UsuarioRoleService para usuario {UserId} y rol {RolNombre}", idUsuario, nombreRol);
         
         try
         {
-            return await _usuarioRepository.AsignarRolAsync(idUsuario, nombreRol);
+            return await _usuarioRoleService.AsignarRolAsync(idUsuario, nombreRol);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al asignar rol {RolNombre} a usuario {UserId}", nombreRol, idUsuario);
+            _logger.LogError(ex, "Error delegando AsignarRolAsync a UsuarioRoleService para usuario {UserId} y rol {RolNombre}", idUsuario, nombreRol);
             throw;
         }
     }
@@ -327,22 +323,15 @@ public class UsuarioService : IUsuarioService
     /// </summary>
     public async Task<bool> RemoverRolAsync(Guid idUsuario, string nombreRol)
     {
-        // Verificar permiso para administrar roles de usuario
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.AssignRoles))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó remover rol sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-
-        _logger.LogInformation("Removiendo rol {RolNombre} a usuario {UserId}", nombreRol, idUsuario);
+        _logger.LogInformation("Delegando RemoverRolAsync a UsuarioRoleService para usuario {UserId} y rol {RolNombre}", idUsuario, nombreRol);
         
         try
         {
-            return await _usuarioRepository.RemoverRolAsync(idUsuario, nombreRol);
+            return await _usuarioRoleService.RemoverRolAsync(idUsuario, nombreRol);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al remover rol {RolNombre} de usuario {UserId}", nombreRol, idUsuario);
+            _logger.LogError(ex, "Error delegando RemoverRolAsync a UsuarioRoleService para usuario {UserId} y rol {RolNombre}", idUsuario, nombreRol);
             throw;
         }
     }
@@ -352,22 +341,15 @@ public class UsuarioService : IUsuarioService
     /// </summary>
     public async Task<bool> AsignarRolPorIdAsync(Guid idUsuario, Guid idRol)
     {
-        // Verificar permiso para administrar roles de usuario
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.AssignRoles))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó asignar rol sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-
-        _logger.LogInformation("Asignando rol {RolId} a usuario {UserId}", idRol, idUsuario);
+        _logger.LogInformation("Delegando AsignarRolPorIdAsync a UsuarioRoleService para usuario {UserId} y rol {RolId}", idUsuario, idRol);
         
         try
         {
-            return await _usuarioRepository.AsignarRolPorIdAsync(idUsuario, idRol);
+            return await _usuarioRoleService.AsignarRolPorIdAsync(idUsuario, idRol);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al asignar rol {RolId} a usuario {UserId}", idRol, idUsuario);
+            _logger.LogError(ex, "Error delegando AsignarRolPorIdAsync a UsuarioRoleService para usuario {UserId} y rol {RolId}", idUsuario, idRol);
             throw;
         }
     }
@@ -377,22 +359,51 @@ public class UsuarioService : IUsuarioService
     /// </summary>
     public async Task<bool> RemoverRolPorIdAsync(Guid idUsuario, Guid idRol)
     {
-        // Verificar permiso para administrar roles de usuario
-        if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.AssignRoles))
-        {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó remover rol sin el permiso requerido", _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
-        }
-
-        _logger.LogInformation("Removiendo rol {RolId} de usuario {UserId}", idRol, idUsuario);
+        _logger.LogInformation("Delegando RemoverRolPorIdAsync a UsuarioRoleService para usuario {UserId} y rol {RolId}", idUsuario, idRol);
         
         try
         {
-            return await _usuarioRepository.RemoverRolPorIdAsync(idUsuario, idRol);
+            return await _usuarioRoleService.RemoverRolPorIdAsync(idUsuario, idRol);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al remover rol {RolId} de usuario {UserId}", idRol, idUsuario);
+            _logger.LogError(ex, "Error delegando RemoverRolPorIdAsync a UsuarioRoleService para usuario {UserId} y rol {RolId}", idUsuario, idRol);
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Obtiene los roles de un usuario
+    /// </summary>
+    public async Task<IEnumerable<string>> GetRolesUsuarioAsync(Guid idUsuario)
+    {
+        _logger.LogInformation("Delegando GetRolesUsuarioAsync a UsuarioRoleService para usuario {UserId}", idUsuario);
+        
+        try
+        {
+            return await _usuarioRoleService.GetRolesUsuarioAsync(idUsuario);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error delegando GetRolesUsuarioAsync a UsuarioRoleService para usuario {UserId}", idUsuario);
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Verifica si un usuario tiene un rol específico
+    /// </summary>
+    public async Task<bool> HasRolAsync(Guid idUsuario, string nombreRol)
+    {
+        _logger.LogInformation("Delegando HasRolAsync a UsuarioRoleService para usuario {UserId} y rol {RolNombre}", idUsuario, nombreRol);
+        
+        try
+        {
+            return await _usuarioRoleService.HasRolAsync(idUsuario, nombreRol);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error delegando HasRolAsync a UsuarioRoleService para usuario {UserId} y rol {RolNombre}", idUsuario, nombreRol);
             throw;
         }
     }

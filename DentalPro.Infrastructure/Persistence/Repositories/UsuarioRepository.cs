@@ -333,4 +333,19 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
         var permisos = await GetUserPermisosAsync(idUsuario);
         return permisos.Any(p => p.ToLower() == nombrePermiso.ToLower());
     }
+    
+    public async Task<bool> HasRolAsync(Guid idUsuario, string rolNombre)
+    {
+        var usuario = await _dbSet
+            .Include(u => u.Roles)
+                .ThenInclude(r => r.Rol)
+            .FirstOrDefaultAsync(u => u.IdUsuario == idUsuario);
+
+        if (usuario == null)
+            return false;
+            
+        return usuario.Roles
+            .Any(r => r.Rol != null && 
+                 r.Rol.Nombre.ToLower() == rolNombre.ToLower());
+    }
 }

@@ -24,6 +24,8 @@ public interface IUsuarioService
     Task<bool> RemoverRolAsync(Guid idUsuario, string nombreRol);
     Task<bool> AsignarRolPorIdAsync(Guid idUsuario, Guid idRol);
     Task<bool> RemoverRolPorIdAsync(Guid idUsuario, Guid idRol);
+    Task<IEnumerable<string>> GetRolesUsuarioAsync(Guid idUsuario);
+    Task<bool> HasRolAsync(Guid idUsuario, string nombreRol);
     
     // Gestión de permisos
     Task<bool> AsignarPermisoAsync(Guid idUsuario, string nombrePermiso);
