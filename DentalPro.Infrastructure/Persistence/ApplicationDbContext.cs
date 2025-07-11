@@ -61,7 +61,7 @@ namespace DentalPro.Infrastructure.Persistence
                     
                 // Configurar relación 1:1 con Usuario
                 builder.HasOne(d => d.Usuario)
-                    .WithOne()
+                    .WithOne(u => u.DoctorDetail) // Especificar la propiedad de navegación en Usuario
                     .HasForeignKey<DoctorDetail>(d => d.IdUsuario)
                     .OnDelete(DeleteBehavior.Cascade);
             });

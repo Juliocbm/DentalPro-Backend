@@ -113,7 +113,7 @@ namespace DentalPro.Infrastructure.Persistence.Interceptors
                 UserId = userId,
                 Details = details,
                 IpAddress = GetClientIpAddress(),
-                ConsultorioId = GetCurrentConsultorioId()
+                IdConsultorio = GetCurrentConsultorioId()
             };
             
             await _auditLogRepository.CreateAsync(auditLog);

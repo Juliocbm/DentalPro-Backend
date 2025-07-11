@@ -55,7 +55,7 @@ namespace DentalPro.Infrastructure.Services
                 UserId = userId,
                 Details = details,
                 IpAddress = GetClientIpAddress(),
-                ConsultorioId = _currentUserResolver.GetCurrentConsultorioId()
+                IdConsultorio = _currentUserResolver.GetCurrentConsultorioId()
             };
 
             await _auditLogRepository.CreateAsync(auditLog);
@@ -224,7 +224,7 @@ namespace DentalPro.Infrastructure.Services
             
             if (filter.ConsultorioId.HasValue)
             {
-                query = query.Where(x => x.ConsultorioId == filter.ConsultorioId.Value);
+                query = query.Where(x => x.IdConsultorio == filter.ConsultorioId.Value);
             }
             
             // Aplicar ordenación (por defecto, descendente por fecha)

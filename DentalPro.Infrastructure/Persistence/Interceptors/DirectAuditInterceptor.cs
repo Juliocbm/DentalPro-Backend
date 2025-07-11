@@ -112,7 +112,7 @@ namespace DentalPro.Infrastructure.Persistence.Interceptors
                         UserId = userId,
                         Details = details,
                         IpAddress = ipAddress,
-                        ConsultorioId = consultorioId,
+                        IdConsultorio = consultorioId,
                         Timestamp = timestamp
                     };
                     
@@ -122,14 +122,24 @@ namespace DentalPro.Infrastructure.Persistence.Interceptors
                 // Si tenemos logs para guardar, los guardamos directamente
                 if (auditLogs.Any())
                 {
-                    // Agregamos directamente al contexto y guardamos
-                    // sin usar el repositorio para evitar ciclos
-                    dbContext.AuditLogs.AddRange(auditLogs);
-                    
-                    // Deshabilitamos temporalmente el interceptor para evitar recursión infinita
-                    dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
-                    await dbContext.SaveChangesAsync(acceptAllChangesOnSuccess: true);
-                    dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
+                    try
+                    {
+                        // Agregamos directamente al contexto y guardamos
+                        // sin usar el repositorio para evitar ciclos
+                        dbContext.AuditLogs.AddRange(auditLogs);
+                        
+                        // Deshabilitamos temporalmente el interceptor para evitar recursión infinita
+                        dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
+                        await dbContext.SaveChangesAsync(acceptAllChangesOnSuccess: true);
+                        dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
+                    }
+                    catch (Exception ex) when (ex.Message.Contains("Invalid object name") && ex.Message.Contains("AuditLogs"))
+                    {
+                        // Si la tabla de auditoría no existe, simplemente lo registramos y continuamos
+                        // para no bloquear el flujo principal
+                        _logger.LogWarning(ex, "No se pudieron guardar los registros de auditoría porque la tabla no existe.");
+                        dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
+                    }
                 }
             }
             catch (Exception ex)

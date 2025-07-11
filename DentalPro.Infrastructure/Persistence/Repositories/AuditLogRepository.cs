@@ -65,7 +65,7 @@ namespace DentalPro.Infrastructure.Repositories
         public async Task<IEnumerable<AuditLog>> GetByConsultorioAsync(Guid consultorioId)
         {
             return await _context.AuditLogs
-                .Where(a => a.ConsultorioId == consultorioId)
+                .Where(a => a.IdConsultorio == consultorioId)
                 .OrderByDescending(a => a.Timestamp)
                 .ToListAsync();
         }

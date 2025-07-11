@@ -50,7 +50,7 @@ namespace DentalPro.Domain.Entities
         /// <summary>
         /// Identificador del consultorio al que pertenece la acción (si aplica)
         /// </summary>
-        public Guid? ConsultorioId { get; set; }
+        public Guid? IdConsultorio { get; set; }
         
         /// <summary>
         /// Crea una nueva instancia de AuditLog
