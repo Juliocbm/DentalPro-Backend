@@ -20,14 +20,20 @@ namespace DentalPro.Api.Controllers;
 [Route("api/[controller]")]
 public class PermisosController : ControllerBase
 {
-    private readonly IPermisoService _permisoService;
+    private readonly IPermisoManagementService _permisoManagementService;
+    private readonly IRolPermisoService _rolPermisoService;
+    private readonly IUsuarioPermisoService _usuarioPermisoService;
     private readonly IUsuarioService _usuarioService;
 
     public PermisosController(
-        IPermisoService permisoService,
+        IPermisoManagementService permisoManagementService,
+        IRolPermisoService rolPermisoService,
+        IUsuarioPermisoService usuarioPermisoService,
         IUsuarioService usuarioService)
     {
-        _permisoService = permisoService;
+        _permisoManagementService = permisoManagementService;
+        _rolPermisoService = rolPermisoService;
+        _usuarioPermisoService = usuarioPermisoService;
         _usuarioService = usuarioService;
     }
 
@@ -41,7 +47,7 @@ public class PermisosController : ControllerBase
     [RequirePermiso(PermisosPermissions.ViewAll)]
     public async Task<ActionResult<IEnumerable<PermisoDto>>> GetPermisos()
     {
-        var permisos = await _permisoService.GetAllPermisosAsync();
+        var permisos = await _permisoManagementService.GetAllPermisosAsync();
         return Ok(permisos);
     }
 
@@ -57,7 +63,7 @@ public class PermisosController : ControllerBase
     [RequirePermiso(PermisosPermissions.ViewDetail)]
     public async Task<ActionResult<PermisoDetailDto>> GetPermiso(Guid id)
     {
-        var permiso = await _permisoService.GetPermisoByIdAsync(id);
+        var permiso = await _permisoManagementService.GetPermisoByIdAsync(id);
         if (permiso == null)
         {
             throw new NotFoundException("Permiso", id);
@@ -84,7 +90,7 @@ public class PermisosController : ControllerBase
             throw new NotFoundException("Usuario", idUsuario);
         }
         
-        var permisos = await _usuarioService.GetPermisosUsuarioAsync(idUsuario);
+        var permisos = await _usuarioPermisoService.GetPermisosUsuarioAsync(idUsuario);
         return Ok(permisos);
     }
     
@@ -113,13 +119,13 @@ public class PermisosController : ControllerBase
         // Asignar permisos por ID
         if (request.PermisoIds != null && request.PermisoIds.Count > 0)
         {
-            result = await _usuarioService.AsignarPermisosUsuarioAsync(idUsuario, request.PermisoIds);
+            result = await _usuarioPermisoService.AsignarPermisosUsuarioAsync(idUsuario, request.PermisoIds);
         }
         
         // Asignar permisos por nombre
         if (request.PermisoNombres != null && request.PermisoNombres.Count > 0)
         {
-            result = await _usuarioService.AsignarPermisosUsuarioByNombreAsync(idUsuario, request.PermisoNombres);
+            result = await _usuarioPermisoService.AsignarPermisosUsuarioByNombreAsync(idUsuario, request.PermisoNombres);
         }
         
         if (!result)
@@ -155,13 +161,13 @@ public class PermisosController : ControllerBase
         // Remover permisos por ID
         if (request.PermisoIds != null && request.PermisoIds.Count > 0)
         {
-            result = await _usuarioService.RemoverPermisosUsuarioAsync(idUsuario, request.PermisoIds);
+            result = await _usuarioPermisoService.RemoverPermisosUsuarioAsync(idUsuario, request.PermisoIds);
         }
         
         // Remover permisos por nombre
         if (request.PermisoNombres != null && request.PermisoNombres.Count > 0)
         {
-            result = await _usuarioService.RemoverPermisosUsuarioByNombreAsync(idUsuario, request.PermisoNombres);
+            result = await _usuarioPermisoService.RemoverPermisosUsuarioByNombreAsync(idUsuario, request.PermisoNombres);
         }
         
         if (!result)

@@ -48,7 +48,7 @@ namespace DentalPro.Infrastructure.Persistence.Repositories
                 .Include(rp => rp.Rol)
                 .ToListAsync();
         }
-        
+
         /// <summary>
         /// Agrega múltiples relaciones rol-permiso en una sola operación
         /// </summary>
@@ -64,22 +64,22 @@ namespace DentalPro.Infrastructure.Persistence.Repositories
                 {
                     idsToAdd.Add((rolPermiso.IdRol, rolPermiso.IdPermiso));
                 }
-                
+
                 // Filtrar las relaciones que ya existen
                 var existingRelations = await _dbSet
                     .Where(rp => idsToAdd.Any(id => id.idRol == rp.IdRol && id.idPermiso == rp.IdPermiso))
                     .ToListAsync();
-                
+
                 // Obtener solo las relaciones que no existen ya
-                var newRelations = rolPermisos.Where(rp => 
+                var newRelations = rolPermisos.Where(rp =>
                     !existingRelations.Any(er => er.IdRol == rp.IdRol && er.IdPermiso == rp.IdPermiso));
-                
+
                 if (newRelations.Any())
                 {
                     await _dbSet.AddRangeAsync(newRelations);
                     await _context.SaveChangesAsync();
                 }
-                
+
                 return true;
             }
             catch (Exception)
@@ -133,6 +133,54 @@ namespace DentalPro.Infrastructure.Persistence.Repositories
             {
                 return false;
             }
+        }
+
+
+        /// <summary>
+        /// Obtiene los permisos asociados a un rol específico
+        /// </summary>
+        public async Task<IEnumerable<Permiso>> GetPermisosByRolIdAsync(Guid idRol)
+        {
+            var rolPermisos = await GetByRolIdAsync(idRol);
+            return rolPermisos.Select(rp => rp.Permiso).ToList();
+        }
+
+        /// <summary>
+        /// Asigna un permiso a un rol
+        /// </summary>
+        public async Task<bool> AsignarPermisoAsync(Guid idRol, Guid idPermiso)
+        {
+            try
+            {
+                // Verificar si la relación ya existe
+                var existe = await ExistsAsync(idRol, idPermiso);
+                if (existe)
+                    return true; // Ya existe, consideramos éxito
+
+                // Crear nueva relación
+                var rolPermiso = new RolPermiso
+                {
+                    IdRol = idRol,
+                    IdPermiso = idPermiso
+                };
+
+                await _dbSet.AddAsync(rolPermiso);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Remueve un permiso de un rol
+        /// </summary>
+        public async Task<bool> RemoverPermisoAsync(Guid idRol, Guid idPermiso)
+        {
+            // Reutilizamos el método DeleteByRolAndPermisoAsync ya existente
+            return await DeleteByRolAndPermisoAsync(idRol, idPermiso);
         }
     }
 }

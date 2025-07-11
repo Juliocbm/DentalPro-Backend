@@ -64,4 +64,12 @@ public interface IUsuarioPermisoService
     /// Verifica si un usuario tiene un permiso específico directamente asignado
     /// </summary>
     Task<bool> HasPermisoDirectoAsync(Guid idUsuario, string nombrePermiso);
+    
+    /// <summary>
+    /// Verifica si un usuario tiene un permiso específico por su nombre (incluye permisos directos y heredados por rol)
+    /// </summary>
+    /// <param name="idUsuario">ID del usuario</param>
+    /// <param name="nombrePermiso">Nombre del permiso a verificar</param>
+    /// <returns>True si tiene el permiso, False si no</returns>
+    Task<bool> HasPermisoByNameAsync(Guid idUsuario, string nombrePermiso);
 }

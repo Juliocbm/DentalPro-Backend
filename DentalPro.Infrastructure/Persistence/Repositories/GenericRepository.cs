@@ -48,8 +48,18 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         return Task.CompletedTask;
     }
 
-    public async Task SaveChangesAsync()
+    public async Task<int> SaveChangesAsync()
     {
-        await _context.SaveChangesAsync();
+        return await _context.SaveChangesAsync();
+    }
+    
+    public object GetDbContext()
+    {
+        return _context;
+    }
+    
+    public virtual async Task<bool> ExistsAsync(Guid id)
+    {
+        return await _dbSet.FindAsync(id) != null;
     }
 }

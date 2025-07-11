@@ -10,5 +10,12 @@ public interface IGenericRepository<T> where T : class
     Task<T> AddAsync(T entity);
     Task UpdateAsync(T entity);
     Task RemoveAsync(T entity);
-    Task SaveChangesAsync();
+    Task<int> SaveChangesAsync();
+    Task<bool> ExistsAsync(Guid id);
+    
+    /// <summary>
+    /// Obtiene el contexto de base de datos actual
+    /// </summary>
+    /// <returns>El contexto de base de datos</returns>
+    object GetDbContext();
 }

@@ -12,14 +12,14 @@ namespace DentalPro.Api.Infrastructure.Authorization
     /// </summary>
     public class PermisoAuthorizationHandler : AuthorizationHandler<PermisoRequirement>
     {
-        private readonly IPermisoService _permisoService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<PermisoAuthorizationHandler> _logger;
 
         public PermisoAuthorizationHandler(
-            IPermisoService permisoService,
+            ICurrentUserService currentUserService,
             ILogger<PermisoAuthorizationHandler> logger)
         {
-            _permisoService = permisoService ?? throw new ArgumentNullException(nameof(permisoService));
+            _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -57,8 +57,8 @@ namespace DentalPro.Api.Infrastructure.Authorization
 
             try
             {
-                // Verificar si el usuario tiene el permiso específico
-                bool hasPermiso = await _permisoService.HasUsuarioPermisoByNameAsync(userId, requirement.NombrePermiso);
+                // Verificar si el usuario tiene el permiso específico usando CurrentUserService
+                bool hasPermiso = await _currentUserService.HasPermisoAsync(requirement.NombrePermiso);
 
                 if (hasPermiso)
                 {

@@ -10,14 +10,14 @@ namespace DentalPro.Application.Common.Validators.Roles;
 public class RolPermisosDtoValidator : AbstractValidator<RolPermisosDto>
 {
     private readonly IRolService _rolService;
-    private readonly IPermisoService _permisoService;
+    private readonly IPermisoManagementService _permisoManagementService;
     
     public RolPermisosDtoValidator(
         IRolService rolService,
-        IPermisoService permisoService)
+        IPermisoManagementService permisoManagementService)
     {
         _rolService = rolService;
-        _permisoService = permisoService;
+        _permisoManagementService = permisoManagementService;
         
         RuleFor(x => x.IdRol)
             .NotEmpty().WithMessage("El ID del rol es obligatorio")
@@ -32,7 +32,7 @@ public class RolPermisosDtoValidator : AbstractValidator<RolPermisosDto>
             RuleForEach(x => x.PermisoIds)
                 .MustAsync(async (id, cancellation) => 
                 {
-                    return await _permisoService.ExistsByIdAsync(id);
+                    return await _permisoManagementService.ExistsByIdAsync(id);
                 }).WithMessage("Uno o más permisos especificados no existen");
         });
         
@@ -44,7 +44,7 @@ public class RolPermisosDtoValidator : AbstractValidator<RolPermisosDto>
                 {
                     foreach (var nombre in nombres)
                     {
-                        if (!await _permisoService.ExistsByNameAsync(nombre))
+                        if (!await _permisoManagementService.ExistsByNameAsync(nombre))
                         {
                             return false;
                         }

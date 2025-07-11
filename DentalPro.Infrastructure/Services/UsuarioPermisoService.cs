@@ -524,5 +524,53 @@ namespace DentalPro.Infrastructure.Services
                 throw;
             }
         }
+        
+        /// <summary>
+        /// Verifica si un usuario tiene un permiso específico por su nombre (incluye permisos directos y heredados por rol)
+        /// </summary>
+        public async Task<bool> HasPermisoByNameAsync(Guid idUsuario, string nombrePermiso)
+        {
+            try
+            {
+                _logger.LogInformation("Verificando si usuario {UserId} tiene el permiso {PermisoNombre}", idUsuario, nombrePermiso);
+                
+                // Verificar que el usuario existe
+                var usuario = await _usuarioRepository.GetByIdAsync(idUsuario);
+                if (usuario == null)
+                {
+                    _logger.LogWarning("No se puede verificar permiso: usuario {UserId} no existe", idUsuario);
+                    throw new NotFoundException("Usuario", idUsuario);
+                }
+                
+                // Primero verificar si tiene el permiso directo
+                if (await HasPermisoDirectoAsync(idUsuario, nombrePermiso))
+                {
+                    return true;
+                }
+                
+                // Si no tiene el permiso directo, verificar si lo tiene a través de sus roles
+                var roles = await _usuarioRepository.GetRolesAsync(idUsuario);
+                if (!roles.Any())
+                {
+                    return false;
+                }
+                
+                // Verificar permiso en cada rol
+                foreach (var rol in roles)
+                {
+                    if (await _usuarioRepository.TieneRolPermisoAsync(rol.IdRol, nombrePermiso))
+                    {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+            catch (Exception ex) when (!(ex is NotFoundException))
+            {
+                _logger.LogError(ex, "Error al verificar si usuario {UserId} tiene permiso {PermisoNombre} (directos+roles)", idUsuario, nombrePermiso);
+                throw;
+            }
+        }
     }
 }

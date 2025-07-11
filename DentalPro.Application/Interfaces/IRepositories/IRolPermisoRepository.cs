@@ -73,5 +73,28 @@ namespace DentalPro.Application.Interfaces.IRepositories
         /// <param name="idRol">ID del rol</param>
         /// <returns>True si se eliminaron correctamente, False si no</returns>
         Task<bool> DeleteAllByRolAsync(Guid idRol);
+
+        /// <summary>
+        /// Obtiene los permisos asociados a un rol específico
+        /// </summary>
+        /// <param name="idRol">ID del rol</param>
+        /// <returns>Lista de permisos asociados al rol</returns>
+        Task<IEnumerable<Permiso>> GetPermisosByRolIdAsync(Guid idRol);
+        
+        /// <summary>
+        /// Asigna un permiso a un rol
+        /// </summary>
+        /// <param name="idRol">ID del rol</param>
+        /// <param name="idPermiso">ID del permiso</param>
+        /// <returns>True si se asignó correctamente, False si no</returns>
+        Task<bool> AsignarPermisoAsync(Guid idRol, Guid idPermiso);
+        
+        /// <summary>
+        /// Remueve un permiso de un rol
+        /// </summary>
+        /// <param name="idRol">ID del rol</param>
+        /// <param name="idPermiso">ID del permiso</param>
+        /// <returns>True si se removió correctamente, False si no</returns>
+        Task<bool> RemoverPermisoAsync(Guid idRol, Guid idPermiso);
     }
 }

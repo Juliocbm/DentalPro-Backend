@@ -45,6 +45,19 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
             .Where(r => !string.IsNullOrEmpty(r))
             .ToList() ?? new List<string>();
     }
+    
+    public async Task<IEnumerable<Rol>> GetRolesAsync(Guid idUsuario)
+    {
+        var usuario = await _dbSet
+            .Include(u => u.Roles)
+                .ThenInclude(r => r.Rol)
+            .FirstOrDefaultAsync(u => u.IdUsuario == idUsuario);
+
+        return usuario?.Roles
+            .Select(r => r.Rol)
+            .Where(r => r != null)
+            .ToList() ?? new List<Rol>();
+    }
 
     public async Task<bool> AsignarRolAsync(Guid idUsuario, string rolNombre)
     {
@@ -354,5 +367,18 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
         return usuario.Roles
             .Any(r => r.Rol != null && 
                  r.Rol.Nombre.ToLower() == rolNombre.ToLower());
+    }
+    
+    public async Task<bool> TieneRolPermisoAsync(Guid idRol, string nombrePermiso)
+    {
+        var rolPermisoRepository = new RolPermisoRepository(_context);
+        var rolPermiso = await rolPermisoRepository.GetByRolIdAsync(idRol);
+        
+        if (rolPermiso == null || !rolPermiso.Any())
+            return false;
+            
+        return rolPermiso
+            .Any(rp => rp.Permiso != null && 
+                 rp.Permiso.Nombre.ToLower() == nombrePermiso.ToLower());
     }
 }

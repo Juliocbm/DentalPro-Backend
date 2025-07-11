@@ -14,11 +14,13 @@ public interface IUsuarioRepository : IGenericRepository<Usuario>
     
     // Gestión de roles
     Task<IEnumerable<string>> GetUserRolesAsync(Guid idUsuario);
+    Task<IEnumerable<Rol>> GetRolesAsync(Guid idUsuario);
     Task<bool> HasRolAsync(Guid idUsuario, string rolNombre);
     Task<bool> AsignarRolAsync(Guid idUsuario, string rolNombre);
     Task<bool> RemoverRolAsync(Guid idUsuario, string rolNombre);
     Task<bool> AsignarRolPorIdAsync(Guid idUsuario, Guid idRol);
     Task<bool> RemoverRolPorIdAsync(Guid idUsuario, Guid idRol);
+    Task<bool> TieneRolPermisoAsync(Guid idRol, string nombrePermiso);
     
     // Gestión de permisos directos del usuario
     Task<IEnumerable<string>> GetUserPermisosAsync(Guid idUsuario);

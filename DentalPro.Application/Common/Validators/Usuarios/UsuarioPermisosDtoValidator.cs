@@ -8,14 +8,14 @@ namespace DentalPro.Application.Common.Validators.Usuarios;
 public class UsuarioPermisosDtoValidator : AbstractValidator<UsuarioPermisosDto>
 {
     private readonly IUsuarioService _usuarioService;
-    private readonly IPermisoService _permisoService;
+    private readonly IPermisoManagementService _permisoManagementService;
     
     public UsuarioPermisosDtoValidator(
         IUsuarioService usuarioService,
-        IPermisoService permisoService)
+        IPermisoManagementService permisoManagementService)
     {
         _usuarioService = usuarioService;
-        _permisoService = permisoService;
+        _permisoManagementService = permisoManagementService;
         
         RuleFor(x => x.IdUsuario)
             .NotEmpty().WithMessage("El ID del usuario es obligatorio")
@@ -30,7 +30,7 @@ public class UsuarioPermisosDtoValidator : AbstractValidator<UsuarioPermisosDto>
             RuleForEach(x => x.PermisoIds)
                 .MustAsync(async (id, cancellation) => 
                 {
-                    var permiso = await _permisoService.GetPermisoByIdAsync(id);
+                    var permiso = await _permisoManagementService.GetPermisoByIdAsync(id);
                     return permiso != null;
                 }).WithMessage("Uno o más permisos especificados no existen");
         });
@@ -42,7 +42,7 @@ public class UsuarioPermisosDtoValidator : AbstractValidator<UsuarioPermisosDto>
                 .NotEmpty().WithMessage("El nombre del permiso no puede estar vacío")
                 .MustAsync(async (nombre, cancellation) => 
                 {
-                    return await _permisoService.ExistsByNameAsync(nombre);
+                    return await _permisoManagementService.ExistsByNameAsync(nombre);
                 }).WithMessage("Uno o más permisos especificados por nombre no existen");
         });
         

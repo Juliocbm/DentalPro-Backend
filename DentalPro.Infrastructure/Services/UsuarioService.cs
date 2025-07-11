@@ -25,7 +25,6 @@ public class UsuarioService : IUsuarioService
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IRolRepository _rolRepository;
     private readonly IPermisoRepository _permisoRepository;
-    private readonly IPermisoService _permisoService;
     private readonly IMapper _mapper;
     private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<UsuarioService> _logger;
@@ -37,7 +36,6 @@ public class UsuarioService : IUsuarioService
         IUsuarioRepository usuarioRepository, 
         IRolRepository rolRepository,
         IPermisoRepository permisoRepository,
-        IPermisoService permisoService,
         IMapper mapper,
         ICurrentUserService currentUserService,
         IUsuarioManagementService usuarioManagementService,
@@ -48,7 +46,6 @@ public class UsuarioService : IUsuarioService
         _usuarioRepository = usuarioRepository ?? throw new ArgumentNullException(nameof(usuarioRepository));
         _rolRepository = rolRepository ?? throw new ArgumentNullException(nameof(rolRepository));
         _permisoRepository = permisoRepository ?? throw new ArgumentNullException(nameof(permisoRepository));
-        _permisoService = permisoService ?? throw new ArgumentNullException(nameof(permisoService));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         _usuarioManagementService = usuarioManagementService ?? throw new ArgumentNullException(nameof(usuarioManagementService));

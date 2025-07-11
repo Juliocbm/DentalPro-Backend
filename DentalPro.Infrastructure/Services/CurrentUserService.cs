@@ -4,6 +4,8 @@ using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Application.Interfaces.IServices;
 using DentalPro.Domain.Entities;
+using DentalPro.Infrastructure.Persistence;
+using DentalPro.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
@@ -18,7 +20,7 @@ public class CurrentUserService : ICurrentUserService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IUsuarioRepository _usuarioRepository;
-    private readonly IPermisoService _permisoService;
+    private readonly IRolPermisoRepository _rolPermisoRepository;
     private readonly ILogger<CurrentUserService> _logger;
     private readonly IMemoryCache _cache;
     
@@ -32,13 +34,13 @@ public class CurrentUserService : ICurrentUserService
     public CurrentUserService(
         IHttpContextAccessor httpContextAccessor,
         IUsuarioRepository usuarioRepository,
-        IPermisoService permisoService,
+        IRolPermisoRepository rolPermisoRepository,
         ILogger<CurrentUserService> logger,
         IMemoryCache cache)
     {
         _httpContextAccessor = httpContextAccessor;
         _usuarioRepository = usuarioRepository;
-        _permisoService = permisoService;
+        _rolPermisoRepository = rolPermisoRepository;
         _logger = logger;
         _cache = cache;
     }
@@ -178,16 +180,58 @@ public class CurrentUserService : ICurrentUserService
             return cachedPermisos.Any(p => p.Equals(permisoNombre, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Si no están en caché, obtenerlos desde el servicio
+        // Si no están en caché, obtenerlos directamente del repositorio
         try
         {
-            var currentUser = await GetCurrentUserAsync();
-            var permisos = await _permisoService.GetPermisosByUsuarioIdAsync(userId);
-
+            // Obtenemos el usuario con sus relaciones
+            var user = await _usuarioRepository.GetByIdWithRolesAndPermisosAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("Usuario con ID {UserId} no encontrado", userId);
+                return false;
+            }
+            
+            // Verificar permisos directos
+            var tienePermisoDirecto = await _usuarioRepository.TienePermisoDirectoAsync(userId, permisoNombre);
+            
+            // Si no tiene el permiso directo, verificar permisos de roles
+            bool tienePermisoRol = false;
+            if (!tienePermisoDirecto)
+            {
+                var roles = await _usuarioRepository.GetRolesAsync(userId);
+                foreach (var rol in roles)
+                {
+                    if (await _usuarioRepository.TieneRolPermisoAsync(rol.IdRol, permisoNombre))
+                    {
+                        tienePermisoRol = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Obtener todos los nombres de permisos para el caché
+            var permisosDirectos = await _usuarioRepository.GetUsuarioPermisosAsync(userId);
+            
+            // Obtener permisos de roles
+            var permisosRoles = new HashSet<string>();
+            var userRoles = await _usuarioRepository.GetRolesAsync(userId);
+            foreach (var rol in userRoles)
+            {
+                // Usar el repositorio inyectado en lugar de crear una nueva instancia
+                var permisos = await _rolPermisoRepository.GetPermisosByRolIdAsync(rol.IdRol);
+                foreach (var permiso in permisos.Where(p => p != null))
+                {
+                    permisosRoles.Add(permiso.Nombre);
+                }
+            }
+            
+            // Combinar todos los permisos
+            var todosPermisos = permisosDirectos.Union(permisosRoles).ToList();
+            
             // Guardar en caché para consultas futuras
-            _cache.Set(cacheKey, permisos, _userCacheDuration);
-
-            return permisos.Any(p => p.Nombre.Equals(permisoNombre, StringComparison.OrdinalIgnoreCase));
+            _cache.Set(cacheKey, todosPermisos, _userCacheDuration);
+            
+            return tienePermisoDirecto || tienePermisoRol;
         }
         catch (Exception ex)
         {
@@ -252,15 +296,32 @@ public class CurrentUserService : ICurrentUserService
             return cachedPermisos;
         }
         
-        // Si no están en caché, obtenerlos desde el servicio
+        // Si no están en caché, obtenerlos directamente del repositorio
         try
         {
-            var permisos = await _permisoService.GetPermisosByUsuarioIdAsync(userId);
+            // Obtener permisos directos del usuario
+            var permisosDirectos = await _usuarioRepository.GetUsuarioPermisosAsync(userId);
+            
+            // Obtener permisos de roles
+            var permisosRoles = new HashSet<string>();
+            var userRoles = await _usuarioRepository.GetRolesAsync(userId);
+            foreach (var rol in userRoles)
+            {
+                // Usar el repositorio inyectado en lugar de crear una nueva instancia
+                var permisos = await _rolPermisoRepository.GetPermisosByRolIdAsync(rol.IdRol);
+                foreach (var permiso in permisos.Where(p => p != null))
+                {
+                    permisosRoles.Add(permiso.Nombre);
+                }
+            }
+            
+            // Combinar todos los permisos
+            var todosPermisos = permisosDirectos.Union(permisosRoles).ToList();
             
             // Guardar en caché
-            _cache.Set(cacheKey, permisos, _userCacheDuration);
+            _cache.Set(cacheKey, todosPermisos, _userCacheDuration);
             
-            return permisos.Select(p => p.Nombre);
+            return todosPermisos;
         }
         catch (Exception ex)
         {

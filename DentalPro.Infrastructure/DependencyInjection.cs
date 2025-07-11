@@ -47,8 +47,8 @@ public static class DependencyInjection
         services.AddScoped<IPermisoCacheService, PermisoCacheService>();
         services.AddScoped<IPermisoManagementService, PermisoManagementService>();
         services.AddScoped<IPermisoAssignmentService, PermisoAssignmentService>();
-        // Fachada de permisos
-        services.AddScoped<IPermisoService, PermisoService>();
+        // Servicios de permisos especializados (sin fachada)
+        services.AddScoped<IRolPermisoService, RolPermisoService>();
         services.AddScoped<IConsultorioService, ConsultorioService>();
         services.AddScoped<ICitaService, CitaService>();
         services.AddScoped<IRecordatorioService, RecordatorioService>();
