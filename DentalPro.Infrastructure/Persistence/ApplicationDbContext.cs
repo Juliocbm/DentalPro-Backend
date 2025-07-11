@@ -65,7 +65,10 @@ namespace DentalPro.Infrastructure.Persistence
                     .HasForeignKey<DoctorDetail>(d => d.IdUsuario)
                     .OnDelete(DeleteBehavior.Cascade);
             });
-                
+
+            modelBuilder.Entity<Permiso>()
+               .HasKey(rp => new { rp.IdPermiso });
+
             // Configuración de clave primaria compuesta para RolPermiso
             modelBuilder.Entity<RolPermiso>()
                 .HasKey(rp => new { rp.IdRol, rp.IdPermiso });
