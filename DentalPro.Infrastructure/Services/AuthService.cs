@@ -23,18 +23,18 @@ public class AuthService : IAuthService
     private readonly IConfiguration _config;
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IRolRepository _rolRepository;
-    private readonly IAuditService _auditService;
-    
+    private readonly Lazy<IAuditService> _auditService;
+
     // Constantes para tokens
     private readonly TimeSpan _accessTokenDuration;
     private readonly TimeSpan _refreshTokenDuration;
-    
+
     // Configuraciones de seguridad
     private readonly int _maxIntentosFallidos;
     private readonly TimeSpan _duracionBloqueo;
 
-    public AuthService(ApplicationDbContext context, IConfiguration config, 
-        IUsuarioRepository usuarioRepository, IRolRepository rolRepository, IAuditService auditService)
+    public AuthService(ApplicationDbContext context, IConfiguration config,
+        IUsuarioRepository usuarioRepository, IRolRepository rolRepository, Lazy<IAuditService> auditService)
     {
         _context = context;
         _config = config;
@@ -43,17 +43,18 @@ public class AuthService : IAuthService
         _auditService = auditService;
 
         // Configuración de duración de tokens (valores por defecto si no están configurados)
-        _accessTokenDuration = TimeSpan.FromMinutes(double.TryParse(_config["Jwt:AccessTokenDurationMinutes"], out double accessTokenMinutes) 
+        _accessTokenDuration = TimeSpan.FromMinutes(double.TryParse(_config["Jwt:AccessTokenDurationMinutes"], out double accessTokenMinutes)
             ? accessTokenMinutes : 30);
-        _refreshTokenDuration = TimeSpan.FromDays(double.TryParse(_config["Jwt:RefreshTokenDurationDays"], out double refreshTokenDays) 
+        _refreshTokenDuration = TimeSpan.FromDays(double.TryParse(_config["Jwt:RefreshTokenDurationDays"], out double refreshTokenDays)
             ? refreshTokenDays : 7);
-            
+
         // Configuración de seguridad para bloqueos de cuenta
-        _maxIntentosFallidos = int.TryParse(_config["Security:MaxLoginAttempts"], out int maxAttempts) 
+        _maxIntentosFallidos = int.TryParse(_config["Security:MaxLoginAttempts"], out int maxAttempts)
             ? maxAttempts : 5;
-        _duracionBloqueo = TimeSpan.FromMinutes(double.TryParse(_config["Security:LockoutDurationMinutes"], out double lockoutMinutes) 
+        _duracionBloqueo = TimeSpan.FromMinutes(double.TryParse(_config["Security:LockoutDurationMinutes"], out double lockoutMinutes)
             ? lockoutMinutes : 15);
     }
+
 
     public async Task<AuthLoginResponseDto> LoginAsync(AuthLoginDto request)
     {
@@ -66,7 +67,7 @@ public class AuthService : IAuthService
         // Si no existe el usuario, registrar el intento y lanzar excepción genérica
         if (user == null)
         {
-            await _auditService.RegisterActionAsync(
+            await _auditService.Value.RegisterActionAsync(
                 "LoginFailure", 
                 "Auth", 
                 Guid.Empty, 
@@ -82,7 +83,7 @@ public class AuthService : IAuthService
         {
             var tiempoRestante = user.BloqueoHasta.Value - DateTime.UtcNow;
             
-            await _auditService.RegisterActionAsync(
+            await _auditService.Value.RegisterActionAsync(
                 "LoginBlocked", 
                 "Auth", 
                 user.IdUsuario, 
@@ -102,7 +103,7 @@ public class AuthService : IAuthService
         // Verificar si la cuenta está activa
         if (!user.Activo)
         {
-            await _auditService.RegisterActionAsync(
+            await _auditService.Value.RegisterActionAsync(
                 "LoginFailure", 
                 "Auth", 
                 user.IdUsuario, 
@@ -132,7 +133,7 @@ public class AuthService : IAuthService
         await _usuarioRepository.RevokeAllRefreshTokensAsync(user.IdUsuario);
         
         // Registrar login exitoso
-        await _auditService.RegisterActionAsync(
+        await _auditService.Value.RegisterActionAsync(
             "LoginSuccess", 
             "Auth", 
             user.IdUsuario, 
@@ -300,7 +301,7 @@ public class AuthService : IAuthService
             user.BloqueoHasta = DateTime.UtcNow.Add(_duracionBloqueo);
             
             // Registrar bloqueo en auditoría
-            await _auditService.RegisterActionAsync(
+            await _auditService.Value.RegisterActionAsync(
                 "AccountLocked", 
                 "Auth", 
                 user.IdUsuario, 
@@ -315,7 +316,7 @@ public class AuthService : IAuthService
         else
         {
             // Registrar intento fallido en auditoría
-            await _auditService.RegisterActionAsync(
+            await _auditService.Value.RegisterActionAsync(
                 "LoginFailure", 
                 "Auth", 
                 user.IdUsuario, 

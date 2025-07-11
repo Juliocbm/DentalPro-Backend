@@ -19,15 +19,15 @@ public static class DependencyInjection
         // Registrar servicios del framework
         services.AddMemoryCache();
         
-        // Registrar el interceptor de auditoría
-        services.AddScoped<AuditSaveChangesInterceptor>();
+        // Registrar interceptor de auditoría directo (sin ninguna dependencia a servicios o repositorios)
+        services.AddScoped<DirectAuditInterceptor>();
         
-        // Registrar DbContext con interceptores
+        // Registrar DbContext con el interceptor directo
         services.AddDbContext<ApplicationDbContext>((sp, options) => {
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
             
-            // Agregar interceptor de auditoría
-            var auditInterceptor = sp.GetRequiredService<AuditSaveChangesInterceptor>();
+            // Agregar interceptor de auditoría directo (sin dependencias circulares)
+            var auditInterceptor = sp.GetRequiredService<DirectAuditInterceptor>();
             options.AddInterceptors(auditInterceptor);
         });
 
@@ -64,11 +64,18 @@ public static class DependencyInjection
         services.AddScoped<IConsultorioService, ConsultorioService>();
         services.AddScoped<ICitaService, CitaService>();
         services.AddScoped<IRecordatorioService, RecordatorioService>();
+        
+        // Registrar CurrentUserResolver (versión simplificada para romper dependencias circulares)
+        services.AddScoped<ICurrentUserResolver, CurrentUserResolver>();
+        
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         
         // Registrar servicio de auditoría
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAuditService, AuditService>();
+        
+        // Registrar versión Lazy del servicio de auditoría para evitar dependencia circular
+        services.AddTransient<Lazy<IAuditService>>(sp => new Lazy<IAuditService>(() => sp.GetRequiredService<IAuditService>()));
         
         // Registrar validadores asíncronos
         services.AddScoped<PacienteExistenceAsyncValidator>();

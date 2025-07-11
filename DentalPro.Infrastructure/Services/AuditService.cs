@@ -23,7 +23,7 @@ namespace DentalPro.Infrastructure.Services
     {
         private readonly IAuditLogRepository _auditLogRepository;
         private readonly IMapper _mapper;
-        private readonly ICurrentUserService _currentUserService;
+        private readonly ICurrentUserResolver _currentUserResolver;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly ILogger<AuditService> _logger;
@@ -31,14 +31,14 @@ namespace DentalPro.Infrastructure.Services
         public AuditService(
             IAuditLogRepository auditLogRepository,
             IMapper mapper,
-            ICurrentUserService currentUserService,
+            ICurrentUserResolver currentUserResolver,
             IHttpContextAccessor httpContextAccessor,
             IUsuarioRepository usuarioRepository,
             ILogger<AuditService> logger)
         {
             _auditLogRepository = auditLogRepository;
             _mapper = mapper;
-            _currentUserService = currentUserService;
+            _currentUserResolver = currentUserResolver;
             _httpContextAccessor = httpContextAccessor;
             _usuarioRepository = usuarioRepository;
             _logger = logger;
@@ -55,7 +55,7 @@ namespace DentalPro.Infrastructure.Services
                 UserId = userId,
                 Details = details,
                 IpAddress = GetClientIpAddress(),
-                ConsultorioId = _currentUserService.GetCurrentConsultorioId()
+                ConsultorioId = _currentUserResolver.GetCurrentConsultorioId()
             };
 
             await _auditLogRepository.CreateAsync(auditLog);
