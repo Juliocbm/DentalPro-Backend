@@ -1,6 +1,8 @@
+using AutoMapper;
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.Common.Permissions;
+using DentalPro.Application.DTOs.Paciente;
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Application.Interfaces.IServices;
 using DentalPro.Domain.Entities;
@@ -15,19 +17,22 @@ namespace DentalPro.Infrastructure.Services
     {
         private readonly IPacienteRepository _pacienteRepository;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IMapper _mapper;
         private readonly ILogger<PacienteService> _logger;
 
         public PacienteService(
             IPacienteRepository pacienteRepository,
             ICurrentUserService currentUserService,
+            IMapper mapper,
             ILogger<PacienteService> logger)
         {
             _pacienteRepository = pacienteRepository;
             _currentUserService = currentUserService;
+            _mapper = mapper;
             _logger = logger;
         }
 
-        public async Task<IEnumerable<Paciente>> GetAllByConsultorioAsync(Guid idConsultorio)
+        public async Task<IEnumerable<PacienteDto>> GetAllByConsultorioAsync(Guid idConsultorio)
         {
             // Verificar permiso para ver todos los pacientes
             if (!await _currentUserService.HasPermisoAsync(PacientesPermissions.ViewAll))
@@ -46,10 +51,11 @@ namespace DentalPro.Infrastructure.Services
                 throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
             }
 
-            return await _pacienteRepository.GetAllByConsultorioAsync(idConsultorio);
+            var pacientes = await _pacienteRepository.GetAllByConsultorioAsync(idConsultorio);
+            return _mapper.Map<IEnumerable<PacienteDto>>(pacientes);
         }
 
-        public async Task<Paciente?> GetByIdAsync(Guid id)
+        public async Task<PacienteDto?> GetByIdAsync(Guid id)
         {
             // Verificar permiso para ver detalles de un paciente
             if (!await _currentUserService.HasPermisoAsync(PacientesPermissions.ViewDetail))
@@ -61,22 +67,26 @@ namespace DentalPro.Infrastructure.Services
 
             var paciente = await _pacienteRepository.GetByIdAsync(id);
 
-            // Si el paciente existe, verificar que pertenezca al mismo consultorio que el usuario
-            if (paciente != null)
+            // Si el paciente no existe, devolver null
+            if (paciente == null)
             {
-                var userConsultorioId = _currentUserService.GetCurrentConsultorioId();
-                if (userConsultorioId != paciente.IdConsultorio)
-                {
-                    _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó acceder a un paciente de un consultorio diferente",
-                        _currentUserService.GetCurrentUserId());
-                    throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
-                }
+                return null;
             }
 
-            return paciente;
+            // Verificar que pertenezca al mismo consultorio que el usuario
+            var userConsultorioId = _currentUserService.GetCurrentConsultorioId();
+            if (userConsultorioId != paciente.IdConsultorio)
+            {
+                _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó acceder a un paciente de un consultorio diferente",
+                    _currentUserService.GetCurrentUserId());
+                throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
+            }
+
+            // Mapear a DTO y devolver
+            return _mapper.Map<PacienteDto>(paciente);
         }
 
-        public async Task<Paciente> CreateAsync(Paciente paciente)
+        public async Task<PacienteDto> CreateAsync(PacienteCreateDto pacienteDto)
         {
             // Verificar permiso para crear pacientes
             if (!await _currentUserService.HasPermisoAsync(PacientesPermissions.Create))
@@ -86,11 +96,17 @@ namespace DentalPro.Infrastructure.Services
                 throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
             }
 
-            // Asegurar que el paciente se asigne al consultorio del usuario actual
+            // Mapear DTO a entidad
+            var paciente = _mapper.Map<Paciente>(pacienteDto);
+
+            // Asegurar que el consultorio sea el del usuario autenticado
             var userConsultorioId = _currentUserService.GetCurrentConsultorioId();
             paciente.IdConsultorio = userConsultorioId;
+            
+            // Establecer fecha de alta actual
+            paciente.FechaAlta = DateTime.Now;
 
-            // Verificación adicional de correo duplicado
+            // Verificar si ya existe un paciente con el mismo correo
             if (!string.IsNullOrEmpty(paciente.Correo))
             {
                 var existingPaciente = await _pacienteRepository.GetByCorreoAsync(paciente.Correo);
@@ -100,16 +116,17 @@ namespace DentalPro.Infrastructure.Services
                 }
             }
 
-            var newPaciente = await _pacienteRepository.CreateAsync(paciente);
+            var createdPaciente = await _pacienteRepository.CreateAsync(paciente);
             await _pacienteRepository.SaveChangesAsync();
             
             _logger.LogInformation("Usuario {UserId} creó un nuevo paciente con ID {PacienteId}", 
-                _currentUserService.GetCurrentUserId(), newPaciente.IdPaciente);
+                _currentUserService.GetCurrentUserId(), createdPaciente.IdPaciente);
             
-            return newPaciente;
+            // Mapear la entidad creada a DTO y devolverla
+            return _mapper.Map<PacienteDto>(createdPaciente);
         }
 
-        public async Task UpdateAsync(Paciente paciente)
+        public async Task<PacienteDto> UpdateAsync(PacienteUpdateDto pacienteDto)
         {
             // Verificar permiso para actualizar pacientes
             if (!await _currentUserService.HasPermisoAsync(PacientesPermissions.Update))
@@ -119,10 +136,10 @@ namespace DentalPro.Infrastructure.Services
                 throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
             }
 
-            var existingPaciente = await _pacienteRepository.GetByIdAsync(paciente.IdPaciente);
+            var existingPaciente = await _pacienteRepository.GetByIdAsync(pacienteDto.IdPaciente);
             if (existingPaciente == null)
             {
-                throw new NotFoundException("Paciente", paciente.IdPaciente);
+                throw new NotFoundException("Paciente", pacienteDto.IdPaciente);
             }
 
             // Verificar que el paciente pertenezca al consultorio del usuario
@@ -134,27 +151,30 @@ namespace DentalPro.Infrastructure.Services
                 throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
             }
 
+            // Mapear el DTO a la entidad existente, manteniendo valores que no deben cambiar
+            _mapper.Map(pacienteDto, existingPaciente);
+
             // Asegurar que no se cambie el consultorio del paciente
-            paciente.IdConsultorio = existingPaciente.IdConsultorio;
+            existingPaciente.IdConsultorio = userConsultorioId;
 
             // Verificación adicional de correo duplicado
-            if (!string.IsNullOrEmpty(paciente.Correo))
+            if (!string.IsNullOrEmpty(existingPaciente.Correo))
             {
-                var pacienteWithSameEmail = await _pacienteRepository.GetByCorreoAsync(paciente.Correo);
-                if (pacienteWithSameEmail != null && pacienteWithSameEmail.IdPaciente != paciente.IdPaciente)
+                var pacienteWithSameEmail = await _pacienteRepository.GetByCorreoAsync(existingPaciente.Correo);
+                if (pacienteWithSameEmail != null && pacienteWithSameEmail.IdPaciente != existingPaciente.IdPaciente)
                 {
                     throw new BadRequestException("El correo electrónico ya está registrado para otro paciente", ErrorCodes.DuplicateEmail);
                 }
             }
-
-            // Mantener la fecha original de alta
-            paciente.FechaAlta = existingPaciente.FechaAlta;
             
-            await _pacienteRepository.UpdateAsync(paciente);
+            await _pacienteRepository.UpdateAsync(existingPaciente);
             await _pacienteRepository.SaveChangesAsync();
             
             _logger.LogInformation("Usuario {UserId} actualizó el paciente con ID {PacienteId}", 
-                _currentUserService.GetCurrentUserId(), paciente.IdPaciente);
+                _currentUserService.GetCurrentUserId(), existingPaciente.IdPaciente);
+                
+            // Devolver el paciente actualizado como DTO
+            return _mapper.Map<PacienteDto>(existingPaciente);
         }
 
         public async Task<bool> DeleteAsync(Guid id)

@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using DentalPro.Application.DTOs.Paciente;
-using DentalPro.Application.Interfaces.IRepositories;
-using DentalPro.Domain.Entities;
 using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Permissions;
@@ -10,7 +8,6 @@ using DentalPro.Api.Infrastructure.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Linq;
 using DentalPro.Application.Interfaces.IServices;
 
 namespace DentalPro.Api.Controllers
@@ -37,20 +34,7 @@ namespace DentalPro.Api.Controllers
                 throw new ForbiddenAccessException(ErrorMessages.ConsultorioRequired);
             }
 
-            var pacientes = await _pacienteService.GetAllByConsultorioAsync(idConsultorio);
-            
-            var pacientesDto = pacientes.Select(p => new PacienteDto
-            {
-                IdPaciente = p.IdPaciente,
-                Nombre = p.Nombre,
-                Apellidos = p.Apellidos,
-                FechaNacimiento = p.FechaNacimiento,
-                Telefono = p.Telefono,
-                Correo = p.Correo,
-                FechaAlta = p.FechaAlta,
-                IdConsultorio = p.IdConsultorio
-            }).ToList();
-
+            var pacientesDto = await _pacienteService.GetAllByConsultorioAsync(idConsultorio);
             return Ok(pacientesDto);
         }
 
@@ -58,31 +42,19 @@ namespace DentalPro.Api.Controllers
         [RequirePermiso(PacientesPermissions.ViewDetail)]
         public async Task<ActionResult<PacienteDto>> GetPaciente(Guid id)
         {
-            var paciente = await _pacienteService.GetByIdAsync(id);
+            var pacienteDto = await _pacienteService.GetByIdAsync(id);
             
-            if (paciente == null)
+            if (pacienteDto == null)
             {
                 throw new NotFoundException("Paciente", id);
             }
 
             // Verificar que el paciente pertenezca al consultorio del usuario autenticado
             var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
-            if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || paciente.IdConsultorio != idConsultorio)
+            if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || pacienteDto.IdConsultorio != idConsultorio)
             {
                 throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
             }
-
-            var pacienteDto = new PacienteDto
-            {
-                IdPaciente = paciente.IdPaciente,
-                Nombre = paciente.Nombre,
-                Apellidos = paciente.Apellidos,
-                FechaNacimiento = paciente.FechaNacimiento,
-                Telefono = paciente.Telefono,
-                Correo = paciente.Correo,
-                FechaAlta = paciente.FechaAlta,
-                IdConsultorio = paciente.IdConsultorio
-            };
 
             return Ok(pacienteDto);
         }
@@ -98,31 +70,10 @@ namespace DentalPro.Api.Controllers
                 throw new ForbiddenAccessException(ErrorMessages.ConsultorioRequired);
             }
 
-            var paciente = new Paciente
-            {
-                Nombre = createDto.Nombre,
-                Apellidos = createDto.Apellidos,
-                FechaNacimiento = createDto.FechaNacimiento,
-                Telefono = createDto.Telefono,
-                Correo = createDto.Correo,
-                IdConsultorio = idConsultorio
-            };
-
-            var createdPaciente = await _pacienteService.CreateAsync(paciente);
-
-            var pacienteDto = new PacienteDto
-            {
-                IdPaciente = createdPaciente.IdPaciente,
-                Nombre = createdPaciente.Nombre,
-                Apellidos = createdPaciente.Apellidos,
-                FechaNacimiento = createdPaciente.FechaNacimiento,
-                Telefono = createdPaciente.Telefono,
-                Correo = createdPaciente.Correo,
-                FechaAlta = createdPaciente.FechaAlta,
-                IdConsultorio = createdPaciente.IdConsultorio
-            };
-
-            return CreatedAtAction(nameof(GetPaciente), new { id = pacienteDto.IdPaciente }, pacienteDto);
+            // El servicio gestionará la asignación del consultorio al paciente
+            var createdPacienteDto = await _pacienteService.CreateAsync(createDto);
+            
+            return CreatedAtAction(nameof(GetPaciente), new { id = createdPacienteDto.IdPaciente }, createdPacienteDto);
         }
 
         [HttpPut("{id:guid}")]
@@ -134,29 +85,22 @@ namespace DentalPro.Api.Controllers
                 throw new BadRequestException("El ID de la URL no coincide con el ID en el cuerpo de la solicitud", ErrorCodes.ValidationFailed);
             }
 
-            // Obtener el paciente actual
-            var paciente = await _pacienteService.GetByIdAsync(id);
-            if (paciente == null)
+            // Obtener el paciente actual para verificar su existencia y consultorio
+            var pacienteDto = await _pacienteService.GetByIdAsync(id);
+            if (pacienteDto == null)
             {
                 throw new NotFoundException("Paciente", id);
             }
 
             // Verificar que pertenezca al mismo consultorio que el usuario autenticado
             var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
-            if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || paciente.IdConsultorio != idConsultorio)
+            if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || pacienteDto.IdConsultorio != idConsultorio)
             {
                 throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
             }
 
-            // Actualizar propiedades
-            paciente.Nombre = updateDto.Nombre;
-            paciente.Apellidos = updateDto.Apellidos;
-            paciente.FechaNacimiento = updateDto.FechaNacimiento;
-            paciente.Telefono = updateDto.Telefono;
-            paciente.Correo = updateDto.Correo;
-            
-            // Actualizar el paciente
-            await _pacienteService.UpdateAsync(paciente);
+            // El servicio manejará la actualización
+            await _pacienteService.UpdateAsync(updateDto);
 
             return NoContent();
         }
@@ -165,15 +109,15 @@ namespace DentalPro.Api.Controllers
         [RequirePermiso(PacientesPermissions.Delete)]
         public async Task<IActionResult> DeletePaciente(Guid id)
         {
-            var paciente = await _pacienteService.GetByIdAsync(id);
-            if (paciente == null)
+            var pacienteDto = await _pacienteService.GetByIdAsync(id);
+            if (pacienteDto == null)
             {
                 throw new NotFoundException("Paciente", id);
             }
 
             // Verificar que pertenezca al mismo consultorio que el usuario autenticado
             var idConsultorioStr = User.FindFirst("IdConsultorio")?.Value;
-            if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || paciente.IdConsultorio != idConsultorio)
+            if (string.IsNullOrEmpty(idConsultorioStr) || !Guid.TryParse(idConsultorioStr, out var idConsultorio) || pacienteDto.IdConsultorio != idConsultorio)
             {
                 throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
             }

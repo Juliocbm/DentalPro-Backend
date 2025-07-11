@@ -9,6 +9,7 @@ namespace DentalPro.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[RequireConsultorioAccess]
 public class RecordatoriosController : ControllerBase
 {
     private readonly IRecordatorioService _recordatorioService;
