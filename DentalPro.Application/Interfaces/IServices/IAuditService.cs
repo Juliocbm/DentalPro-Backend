@@ -62,5 +62,12 @@ namespace DentalPro.Application.Interfaces.IServices
         /// <param name="pageSize">Tamaño de página</param>
         /// <returns>Lista paginada de registros de auditoría</returns>
         Task<PaginatedList<AuditLogDto>> GetLogsByUserAsync(Guid userId, int pageNumber, int pageSize);
+        
+        /// <summary>
+        /// Realiza una búsqueda avanzada de registros de auditoría con múltiples filtros
+        /// </summary>
+        /// <param name="filter">Filtros para la búsqueda</param>
+        /// <returns>Lista paginada de registros de auditoría</returns>
+        Task<PaginatedList<AuditLogDto>> SearchLogsAsync(AuditLogFilter filter);
     }
 }

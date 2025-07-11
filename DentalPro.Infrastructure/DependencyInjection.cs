@@ -8,6 +8,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Caching.Memory;
 using DentalPro.Application.Common.Validators.Async;
+using DentalPro.Infrastructure.Persistence.Interceptors;
+using Microsoft.Extensions.Logging;
+using DentalPro.Infrastructure.Repositories;
 
 public static class DependencyInjection
 {
@@ -15,9 +18,18 @@ public static class DependencyInjection
     {
         // Registrar servicios del framework
         services.AddMemoryCache();
-        // Registrar DbContext
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+        
+        // Registrar el interceptor de auditoría
+        services.AddScoped<AuditSaveChangesInterceptor>();
+        
+        // Registrar DbContext con interceptores
+        services.AddDbContext<ApplicationDbContext>((sp, options) => {
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+            
+            // Agregar interceptor de auditoría
+            var auditInterceptor = sp.GetRequiredService<AuditSaveChangesInterceptor>();
+            options.AddInterceptors(auditInterceptor);
+        });
 
         // Registrar HttpContextAccessor para acceso al contexto HTTP
         services.AddHttpContextAccessor();
@@ -52,7 +64,11 @@ public static class DependencyInjection
         services.AddScoped<IConsultorioService, ConsultorioService>();
         services.AddScoped<ICitaService, CitaService>();
         services.AddScoped<IRecordatorioService, RecordatorioService>();
-        services.AddScoped<ICurrentUserService, CurrentUserService>(); 
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        
+        // Registrar servicio de auditoría
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<IAuditService, AuditService>();
         
         // Registrar validadores asíncronos
         services.AddScoped<PacienteExistenceAsyncValidator>();

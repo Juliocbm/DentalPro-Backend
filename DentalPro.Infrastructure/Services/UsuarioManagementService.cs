@@ -9,6 +9,8 @@ using DentalPro.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DentalPro.Infrastructure.Services
@@ -23,19 +25,22 @@ namespace DentalPro.Infrastructure.Services
         private readonly ICurrentUserService _currentUserService;
         private readonly IMapper _mapper;
         private readonly ILogger<UsuarioManagementService> _logger;
+        private readonly IAuditService _auditService;
 
         public UsuarioManagementService(
             IUsuarioRepository usuarioRepository,
             IRolRepository rolRepository,
             ICurrentUserService currentUserService,
             IMapper mapper,
-            ILogger<UsuarioManagementService> logger)
+            ILogger<UsuarioManagementService> logger,
+            IAuditService auditService)
         {
             _usuarioRepository = usuarioRepository ?? throw new ArgumentNullException(nameof(usuarioRepository));
             _rolRepository = rolRepository ?? throw new ArgumentNullException(nameof(rolRepository));
             _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
         }
 
         /// <summary>
@@ -235,6 +240,22 @@ namespace DentalPro.Infrastructure.Services
             
             // Recargar el usuario con sus roles para mapear correctamente
             var usuarioCompleto = await _usuarioRepository.GetByIdWithRolesAsync(usuario.IdUsuario);
+            
+            // Registrar auditoría
+            await _auditService.RegisterActionAsync(
+                "Create",
+                "Usuario",
+                usuario.IdUsuario,
+                _currentUserService.GetCurrentUserId(),
+                JsonSerializer.Serialize(new { 
+                    Email = usuario.Correo,
+                    NombreCompleto = usuario.Nombre,
+                    FechaCreacion = DateTime.UtcNow,
+                    ConsultorioId = usuario.IdConsultorio,
+                    Roles = usuarioCreateDto.RolIds?.Count() ?? 1
+                })
+            );
+            
             return _mapper.Map<UsuarioDto>(usuarioCompleto);
         }
 
@@ -303,6 +324,29 @@ namespace DentalPro.Infrastructure.Services
             
             // Recargar el usuario con sus roles actualizados
             var usuarioActualizado = await _usuarioRepository.GetByIdWithRolesAsync(existingUser.IdUsuario);
+            
+            // Registrar auditoría
+            await _auditService.RegisterActionAsync(
+                "Update",
+                "Usuario",
+                existingUser.IdUsuario,
+                _currentUserService.GetCurrentUserId(),
+                JsonSerializer.Serialize(new { 
+                    Original = new {
+                        Nombre = existingUser.Nombre,
+                        Correo = existingUser.Correo,
+                        Activo = existingUser.Activo,
+                        RolesCount = currentRoles.Count
+                    },
+                    Actualizado = new {
+                        Nombre = usuarioUpdateDto.Nombre,
+                        Correo = usuarioUpdateDto.Correo,
+                        Activo = usuarioUpdateDto.Activo,
+                        RolesCount = usuarioUpdateDto.RolIds?.Count() ?? 0
+                    }
+                })
+            );
+            
             return _mapper.Map<UsuarioDto>(usuarioActualizado);
         }
 
@@ -338,11 +382,30 @@ namespace DentalPro.Infrastructure.Services
                 throw new BadRequestException(ErrorCodes.InvalidOperation, "No puedes eliminar tu propia cuenta de usuario.");
             }
 
+            // Guardar datos del usuario para auditoría antes de eliminarlo
+            var userData = new {
+                IdUsuario = usuario.IdUsuario,
+                Email = usuario.Correo,
+                NombreCompleto = usuario.Nombre,
+                IdConsultorio = usuario.IdConsultorio,
+                FechaCreacion = DateTime.UtcNow,
+                Activo = usuario.Activo
+            };
+            
             // Eliminar usuario
             await _usuarioRepository.RemoveAsync(usuario);
             await _usuarioRepository.SaveChangesAsync();
             
             _logger.LogInformation("Usuario con ID {UserId} eliminado correctamente", id);
+            
+            // Registrar auditoría
+            await _auditService.RegisterActionAsync(
+                "Delete",
+                "Usuario",
+                guidId,
+                _currentUserService.GetCurrentUserId(),
+                JsonSerializer.Serialize(userData)
+            );
             return true;
         }
 
@@ -387,6 +450,18 @@ namespace DentalPro.Infrastructure.Services
             await _usuarioRepository.SaveChangesAsync();
             
             _logger.LogInformation("Contraseña cambiada correctamente para usuario {UserId}", id);
+            
+            // Registrar auditoría (sin incluir contraseñas en los detalles)
+            await _auditService.RegisterActionAsync(
+                "ChangePassword",
+                "Usuario",
+                guidId,
+                _currentUserService.GetCurrentUserId(),
+                JsonSerializer.Serialize(new { 
+                    Timestamp = DateTime.UtcNow,
+                    ChangedBy = guidId == _currentUserService.GetCurrentUserId() ? "Self" : "Administrator"
+                })
+            );
             return true;
         }
     }

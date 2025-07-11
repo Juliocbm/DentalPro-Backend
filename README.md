@@ -148,3 +148,57 @@ El proyecto sigue una arquitectura limpia (Clean Architecture):
 - **DentalPro.Application**: Lógica de aplicación, DTOs e interfaces
 - **DentalPro.Infrastructure**: Implementaciones concretas y acceso a datos
 - **DentalPro.Api**: Controladores y configuración de la API
+
+## Sistema de Auditoría
+
+La aplicación implementa un sistema de auditoría robusto que registra cambios y acciones importantes. Este sistema funciona de dos maneras complementarias:
+
+### Auditoría Automática mediante Interceptores
+
+Se utiliza `AuditSaveChangesInterceptor` para registrar automáticamente los cambios en entidades a través de Entity Framework Core:
+
+- **Detección automática**: Captura adiciones, modificaciones y eliminaciones de entidades
+- **Prevención de recursividad**: Evita auditar la propia entidad de auditoría
+- **Integración transparente**: Se conecta al pipeline de SaveChanges de EF Core
+- **Contextual**: Registra el usuario actual, IP y detalles de la operación
+
+```csharp
+// Registro del interceptor (en DependencyInjection.cs)
+services.AddScoped<AuditSaveChangesInterceptor>();
+
+// Integración con DbContext
+services.AddDbContext<ApplicationDbContext>((sp, options) =>
+{
+    // ... configuración existente ...
+    options.AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>());
+});
+```
+
+### Auditoría Explícita en Servicios
+
+Para eventos de negocio importantes que no generan cambios directos en entidades, se implementa registro de auditoría explícito:
+
+- **Auditoría de operaciones críticas**: Inicio de sesión, cambio de contraseña, etc.
+- **Detalle controlado**: Control preciso sobre qué información se registra
+- **Valores contextuales**: Captura estado anterior y posterior en operaciones de actualización
+
+```csharp
+// Ejemplo de auditoría explícita en servicio
+await _auditService.RegisterActionAsync(
+    "ChangePassword",
+    "Usuario",
+    userId,
+    currentUserId,
+    JsonSerializer.Serialize(new { Timestamp = DateTime.UtcNow })
+);
+```
+
+### Enriquecimiento y Búsqueda
+
+El sistema de auditoría incluye funcionalidades avanzadas:
+
+- **Enriquecimiento de datos**: Los registros se enriquecen con información de usuario
+- **Búsqueda avanzada**: Filtrado por usuario, entidad, acción, rango de fechas, etc.
+- **Paginación integrada**: Soporte para paginación en consultas de auditoría
+
+Este enfoque dual (automático + explícito) garantiza una cobertura completa de auditoría mientras mantiene el código limpio y la responsabilidad separada.
