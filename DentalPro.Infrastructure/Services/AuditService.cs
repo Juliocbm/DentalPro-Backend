@@ -45,7 +45,7 @@ namespace DentalPro.Infrastructure.Services
         }
 
         /// <inheritdoc />
-        public async Task RegisterActionAsync(string action, string entityType, Guid entityId, Guid userId, string details = null)
+        public async Task RegisterActionAsync(string action, string entityType, Guid entityId, Guid userId, string details = null, Guid? idConsultorio = null)
         {
             var auditLog = new AuditLog
             {
@@ -55,7 +55,7 @@ namespace DentalPro.Infrastructure.Services
                 UserId = userId,
                 Details = details,
                 IpAddress = GetClientIpAddress(),
-                IdConsultorio = _currentUserResolver.GetCurrentConsultorioId()
+                IdConsultorio = idConsultorio ?? _currentUserResolver.GetCurrentConsultorioId()
             };
 
             await _auditLogRepository.CreateAsync(auditLog);

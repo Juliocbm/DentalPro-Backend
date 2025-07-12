@@ -19,7 +19,8 @@ namespace DentalPro.Application.Interfaces.IServices
         /// <param name="entityId">Identificador de la entidad afectada</param>
         /// <param name="userId">Identificador del usuario que realizó la acción</param>
         /// <param name="details">Detalles adicionales de la acción en formato JSON (opcional)</param>
-        Task RegisterActionAsync(string action, string entityType, Guid entityId, Guid userId, string details = null);
+        /// <param name="idConsultorio">Identificador del consultorio relacionado con la acción (opcional)</param>
+        Task RegisterActionAsync(string action, string entityType, Guid entityId, Guid userId, string details = null, Guid? idConsultorio = null);
         
         /// <summary>
         /// Obtiene todos los registros de auditoría con paginación

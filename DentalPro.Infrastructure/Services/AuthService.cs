@@ -92,7 +92,8 @@ public class AuthService : IAuthService
                     Correo = user.Correo, 
                     BloqueoHasta = user.BloqueoHasta,
                     MinutosRestantes = Math.Ceiling(tiempoRestante.TotalMinutes)
-                })
+                }),
+                idConsultorio: user.IdConsultorio
             );
             
             throw new TooManyRequestsException(
@@ -108,7 +109,8 @@ public class AuthService : IAuthService
                 "Auth", 
                 user.IdUsuario, 
                 user.IdUsuario,
-                System.Text.Json.JsonSerializer.Serialize(new { Correo = user.Correo, Motivo = "CuentaInactiva" })
+                System.Text.Json.JsonSerializer.Serialize(new { Correo = user.Correo, Motivo = "CuentaInactiva" }),
+                idConsultorio: user.IdConsultorio
             );
             
             throw new BadRequestException("La cuenta de usuario está desactivada", ErrorCodes.AccountDisabled);
@@ -138,7 +140,10 @@ public class AuthService : IAuthService
             "Auth", 
             user.IdUsuario, 
             user.IdUsuario,
-            System.Text.Json.JsonSerializer.Serialize(new { Timestamp = DateTime.UtcNow })
+            System.Text.Json.JsonSerializer.Serialize(new { 
+                Timestamp = DateTime.UtcNow
+            }),
+            idConsultorio: user.IdConsultorio
         );
         
         // Generar tokens nuevos
@@ -310,7 +315,8 @@ public class AuthService : IAuthService
                     IntentosFallidos = user.IntentosFallidos,
                     BloqueoHasta = user.BloqueoHasta,
                     DuracionBloqueoMinutos = _duracionBloqueo.TotalMinutes
-                })
+                }),
+                idConsultorio: user.IdConsultorio
             );
         }
         else
@@ -324,7 +330,8 @@ public class AuthService : IAuthService
                 System.Text.Json.JsonSerializer.Serialize(new { 
                     IntentosFallidos = user.IntentosFallidos,
                     MaxIntentos = _maxIntentosFallidos
-                })
+                }),
+                idConsultorio: user.IdConsultorio
             );
         }
         
