@@ -74,6 +74,9 @@ public static class DependencyInjection
         services.AddScoped<ICitaNotificacionService, CitaNotificacionService>();
         services.AddScoped<ICitaService, CitaService>();
         
+        // Servicios de recordatorio (patrón fachada)
+        services.AddScoped<IRecordatorioManagementService, RecordatorioManagementService>();
+        services.AddScoped<IRecordatorioNotificacionService, RecordatorioNotificacionService>();
         services.AddScoped<IRecordatorioService, RecordatorioService>();
         
         // Registrar CurrentUserResolver (versión simplificada para romper dependencias circulares)
