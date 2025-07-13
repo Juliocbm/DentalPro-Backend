@@ -3,9 +3,9 @@ using DentalPro.Application.DTOs.Auth;
 namespace DentalPro.Application.Interfaces.IServices;
 
 /// <summary>
-/// Interfaz principal para autenticación que actúa como fachada a servicios especializados
+/// Interfaz para el servicio especializado en autenticación de usuarios
 /// </summary>
-public interface IAuthService
+public interface IAuthenticationService
 {
     /// <summary>
     /// Inicia sesión en el sistema
@@ -13,13 +13,6 @@ public interface IAuthService
     /// <param name="request">Credenciales de inicio de sesión</param>
     /// <returns>Respuesta con tokens de autenticación</returns>
     Task<AuthLoginResponseDto> LoginAsync(AuthLoginDto request);
-    
-    /// <summary>
-    /// Registra un nuevo usuario en el sistema
-    /// </summary>
-    /// <param name="request">Datos del usuario a registrar</param>
-    /// <returns>Respuesta con información del usuario creado</returns>
-    Task<AuthRegisterResponseDto> RegisterAsync(AuthRegisterDto request);
     
     /// <summary>
     /// Actualiza un token de acceso usando un refresh token
