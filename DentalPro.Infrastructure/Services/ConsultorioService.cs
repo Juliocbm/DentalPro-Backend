@@ -3,6 +3,7 @@ using DentalPro.Application.Common.Constants;
 using DentalPro.Application.Common.Exceptions;
 using DentalPro.Application.Common.Permissions;
 using DentalPro.Application.DTOs.Consultorio;
+using DentalPro.Application.DTOs.Usuario;
 using DentalPro.Application.Interfaces.IRepositories;
 using DentalPro.Application.Interfaces.IServices;
 using DentalPro.Domain.Entities;
@@ -25,6 +26,7 @@ public class ConsultorioService : IConsultorioService
     private readonly ILogger<ConsultorioService> _logger;
     private readonly IAuditService _auditService;
     private readonly IConsultorioManagementService _consultorioManagementService;
+    private readonly IConsultorioStaffService _consultorioStaffService;
 
     public ConsultorioService(
         IConsultorioRepository consultorioRepository,
@@ -32,7 +34,8 @@ public class ConsultorioService : IConsultorioService
         IMapper mapper,
         ILogger<ConsultorioService> logger,
         IAuditService auditService,
-        IConsultorioManagementService consultorioManagementService)
+        IConsultorioManagementService consultorioManagementService,
+        IConsultorioStaffService consultorioStaffService)
     {
         _consultorioRepository = consultorioRepository;
         _currentUserService = currentUserService;
@@ -40,6 +43,7 @@ public class ConsultorioService : IConsultorioService
         _logger = logger;
         _auditService = auditService;
         _consultorioManagementService = consultorioManagementService;
+        _consultorioStaffService = consultorioStaffService ?? throw new ArgumentNullException(nameof(consultorioStaffService));
     }
 
     /// <summary>
@@ -179,6 +183,126 @@ public class ConsultorioService : IConsultorioService
             // Este método no debería lanzar excepciones relacionadas con permisos
             // ya que es una verificación básica, pero podemos capturar errores técnicos
             _logger.LogError(ex, "ConsultorioService: Error en ExistsByIdAsync: {Message}", ex.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los doctores asociados a un consultorio específico
+    /// </summary>
+    public async Task<IEnumerable<UsuarioDto>> GetDoctoresByConsultorioAsync(Guid consultorioId)
+    {
+        try
+        {
+            _logger.LogInformation("ConsultorioService: Delegando GetDoctoresByConsultorioAsync al servicio especializado");
+            return await _consultorioStaffService.GetDoctoresByConsultorioAsync(consultorioId);
+        }
+        catch (Exception ex) when (ex is ForbiddenAccessException || ex is NotFoundException)
+        {
+            // Propagamos las excepciones de seguridad y no encontrado sin modificación
+            _logger.LogWarning(ex, "ConsultorioService: Error controlado en GetDoctoresByConsultorioAsync: {Message}", ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Capturamos otras excepciones para logging centralizado y las re-lanzamos
+            _logger.LogError(ex, "ConsultorioService: Error no controlado en GetDoctoresByConsultorioAsync: {Message}", ex.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Obtiene todos los asistentes asociados a un consultorio específico
+    /// </summary>
+    public async Task<IEnumerable<UsuarioDto>> GetAsistentesByConsultorioAsync(Guid consultorioId)
+    {
+        try
+        {
+            _logger.LogInformation("ConsultorioService: Delegando GetAsistentesByConsultorioAsync al servicio especializado");
+            return await _consultorioStaffService.GetAsistentesByConsultorioAsync(consultorioId);
+        }
+        catch (Exception ex) when (ex is ForbiddenAccessException || ex is NotFoundException)
+        {
+            // Propagamos las excepciones de seguridad y no encontrado sin modificación
+            _logger.LogWarning(ex, "ConsultorioService: Error controlado en GetAsistentesByConsultorioAsync: {Message}", ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Capturamos otras excepciones para logging centralizado y las re-lanzamos
+            _logger.LogError(ex, "ConsultorioService: Error no controlado en GetAsistentesByConsultorioAsync: {Message}", ex.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Asigna un doctor a un consultorio
+    /// </summary>
+    public async Task<bool> AsignarDoctorAsync(Guid usuarioId, Guid consultorioId)
+    {
+        try
+        {
+            _logger.LogInformation("ConsultorioService: Delegando AsignarDoctorAsync al servicio especializado");
+            return await _consultorioStaffService.AsignarDoctorAsync(usuarioId, consultorioId);
+        }
+        catch (Exception ex) when (ex is ForbiddenAccessException || ex is NotFoundException || ex is BadRequestException)
+        {
+            // Propagamos las excepciones de seguridad, no encontrado y validación sin modificación
+            _logger.LogWarning(ex, "ConsultorioService: Error controlado en AsignarDoctorAsync: {Message}", ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Capturamos otras excepciones para logging centralizado y las re-lanzamos
+            _logger.LogError(ex, "ConsultorioService: Error no controlado en AsignarDoctorAsync: {Message}", ex.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Asigna un asistente a un consultorio
+    /// </summary>
+    public async Task<bool> AsignarAsistenteAsync(Guid usuarioId, Guid consultorioId)
+    {
+        try
+        {
+            _logger.LogInformation("ConsultorioService: Delegando AsignarAsistenteAsync al servicio especializado");
+            return await _consultorioStaffService.AsignarAsistenteAsync(usuarioId, consultorioId);
+        }
+        catch (Exception ex) when (ex is ForbiddenAccessException || ex is NotFoundException || ex is BadRequestException)
+        {
+            // Propagamos las excepciones de seguridad, no encontrado y validación sin modificación
+            _logger.LogWarning(ex, "ConsultorioService: Error controlado en AsignarAsistenteAsync: {Message}", ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Capturamos otras excepciones para logging centralizado y las re-lanzamos
+            _logger.LogError(ex, "ConsultorioService: Error no controlado en AsignarAsistenteAsync: {Message}", ex.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Desvincula un miembro del personal de un consultorio
+    /// </summary>
+    public async Task<bool> DesvincularMiembroAsync(Guid usuarioId, Guid consultorioId)
+    {
+        try
+        {
+            _logger.LogInformation("ConsultorioService: Delegando DesvincularMiembroAsync al servicio especializado");
+            return await _consultorioStaffService.DesvincularMiembroAsync(usuarioId, consultorioId);
+        }
+        catch (Exception ex) when (ex is ForbiddenAccessException || ex is NotFoundException || ex is BadRequestException)
+        {
+            // Propagamos las excepciones de seguridad, no encontrado y validación sin modificación
+            _logger.LogWarning(ex, "ConsultorioService: Error controlado en DesvincularMiembroAsync: {Message}", ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Capturamos otras excepciones para logging centralizado y las re-lanzamos
+            _logger.LogError(ex, "ConsultorioService: Error no controlado en DesvincularMiembroAsync: {Message}", ex.Message);
             throw;
         }
     }
