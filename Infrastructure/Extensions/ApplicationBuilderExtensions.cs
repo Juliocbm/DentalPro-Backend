@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using DentalPro.Api.Infrastructure.Middlewares;
 
 namespace DentalPro.Api.Infrastructure.Extensions;
@@ -13,5 +14,13 @@ public static class ApplicationBuilderExtensions
     public static IApplicationBuilder UseGlobalExceptionHandler(this IApplicationBuilder app)
     {
         return app.UseMiddleware<ExceptionHandlingMiddleware>();
+    }
+    
+    /// <summary>
+    /// Agrega el middleware para estandarizar las respuestas de errores de autorización
+    /// </summary>
+    public static IApplicationBuilder UseStandardizedAuthorizationResponse(this IApplicationBuilder app)
+    {
+        return app.UseMiddleware<AuthorizationResponseMiddleware>();
     }
 }

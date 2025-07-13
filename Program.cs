@@ -201,6 +201,10 @@ app.UseHttpsRedirection();
 app.UseGlobalExceptionHandler();
 
 app.UseAuthentication();
+
+// Middleware para estandarizar respuestas de autorización
+app.UseStandardizedAuthorizationResponse();
+
 app.UseAuthorization();
 
 app.MapControllers();
