@@ -9,12 +9,8 @@ namespace DentalPro.Domain.Entities;
 public class DoctorDetail
 {
     /// <summary>
-    /// ID único para DoctorDetail
-    /// </summary>
-    public Guid IdDoctorDetail { get; set; }
-    
-    /// <summary>
     /// ID del usuario asociado (relación 1:1 con Usuario)
+    /// Actúa como clave primaria y clave foránea
     /// </summary>
     public Guid IdUsuario { get; set; }
     

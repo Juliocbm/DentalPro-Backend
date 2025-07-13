@@ -89,7 +89,8 @@ namespace DentalPro.Infrastructure.Persistence
             {
                 builder.ToTable("DoctorDetalle", "seguridad");
                 
-                builder.HasKey(d => d.IdDoctorDetail);
+                // Usar IdUsuario como clave primaria para simplificar la relación 1:1
+                builder.HasKey(d => d.IdUsuario);
                 
                 builder.Property(d => d.Especialidad)
                     .HasMaxLength(100)
@@ -101,7 +102,7 @@ namespace DentalPro.Infrastructure.Persistence
                 builder.Property(d => d.Certificaciones)
                     .HasMaxLength(1000);
                     
-                // Configurar relación 1:1 con Usuario
+                // Configurar relación 1:1 con Usuario donde IdUsuario es tanto PK como FK
                 builder.HasOne(d => d.Usuario)
                     .WithOne(u => u.DoctorDetail) // Especificar la propiedad de navegación en Usuario
                     .HasForeignKey<DoctorDetail>(d => d.IdUsuario)
