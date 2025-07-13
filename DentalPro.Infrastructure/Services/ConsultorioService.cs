@@ -47,16 +47,23 @@ public class ConsultorioService : IConsultorioService
     /// </summary>
     public async Task<IEnumerable<ConsultorioDto>> GetAllAsync()
     {
-        // Verificar permiso para ver todos los consultorios usando permisos granulares
-        if (!await _currentUserService.HasPermisoAsync(ConsultoriosPermissions.ViewAll))
+        try
         {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó ver todos los consultorios sin el permiso requerido",
-                _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+            _logger.LogInformation("ConsultorioService: Delegando GetAllAsync al servicio especializado");
+            return await _consultorioManagementService.GetAllAsync();
         }
-
-        var consultorios = await _consultorioRepository.GetAllAsync();
-        return _mapper.Map<IEnumerable<ConsultorioDto>>(consultorios);
+        catch (Exception ex) when (ex is ForbiddenAccessException)
+        {
+            // Propagamos las excepciones de seguridad sin modificación
+            _logger.LogWarning(ex, "ConsultorioService: Error controlado en GetAllAsync: {Message}", ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Capturamos otras excepciones para logging centralizado y las re-lanzamos
+            _logger.LogError(ex, "ConsultorioService: Error no controlado en GetAllAsync: {Message}", ex.Message);
+            throw;
+        }
     }
 
     /// <summary>
@@ -88,35 +95,23 @@ public class ConsultorioService : IConsultorioService
     /// </summary>
     public async Task<ConsultorioDto> CreateAsync(ConsultorioCreateDto consultorioDto)
     {
-        // Verificar permiso para crear consultorios usando permisos granulares
-        if (!await _currentUserService.HasPermisoAsync(ConsultoriosPermissions.Create))
+        try
         {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó crear un consultorio sin el permiso requerido",
-                _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+            _logger.LogInformation("ConsultorioService: Delegando CreateAsync al servicio especializado");
+            return await _consultorioManagementService.CreateAsync(consultorioDto);
         }
-
-        // Mapear DTO a entidad
-        var consultorio = _mapper.Map<Consultorio>(consultorioDto);
-
-        var createdConsultorio = await _consultorioRepository.AddAsync(consultorio);
-        await _consultorioRepository.SaveChangesAsync();
-
-        var userId = _currentUserService.GetCurrentUserId();
-
-        _logger.LogInformation("Usuario {UserId} creó un nuevo consultorio con ID {ConsultorioId}",
-            userId, createdConsultorio.IdConsultorio);
-
-        // Registrar acción en el servicio de auditoría
-        await _auditService.RegisterActionAsync(
-            "Create",
-            "Consultorio",
-            createdConsultorio.IdConsultorio,
-            userId,
-            JsonConvert.SerializeObject(new { consultorio = consultorioDto }));
-
-        // Mapear la entidad creada a DTO y devolverla
-        return _mapper.Map<ConsultorioDto>(createdConsultorio);
+        catch (Exception ex) when (ex is ForbiddenAccessException || ex is BadRequestException)
+        {
+            // Propagamos las excepciones de seguridad y validación sin modificación
+            _logger.LogWarning(ex, "ConsultorioService: Error controlado en CreateAsync: {Message}", ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Capturamos otras excepciones para logging centralizado y las re-lanzamos
+            _logger.LogError(ex, "ConsultorioService: Error no controlado en CreateAsync: {Message}", ex.Message);
+            throw;
+        }
     }
 
     /// <summary>
@@ -124,54 +119,23 @@ public class ConsultorioService : IConsultorioService
     /// </summary>
     public async Task<ConsultorioDto> UpdateAsync(ConsultorioUpdateDto consultorioDto)
     {
-        // Verificar permiso para actualizar consultorios usando permisos granulares
-        if (!await _currentUserService.HasPermisoAsync(ConsultoriosPermissions.Update))
+        try
         {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó actualizar un consultorio sin el permiso requerido",
-                _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+            _logger.LogInformation("ConsultorioService: Delegando UpdateAsync al servicio especializado");
+            return await _consultorioManagementService.UpdateAsync(consultorioDto);
         }
-
-        // Verificación explícita de acceso a consultorio
-        var hasGlobalAccess = await _currentUserService.HasPermisoAsync(ConsultoriosPermissions.ViewAll);
-        if (!hasGlobalAccess)
+        catch (Exception ex) when (ex is ForbiddenAccessException || ex is NotFoundException || ex is BadRequestException)
         {
-            var userConsultorioId = _currentUserService.GetCurrentConsultorioId();
-            if (consultorioDto.IdConsultorio != userConsultorioId)
-            {
-                _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó actualizar un consultorio diferente",
-                    _currentUserService.GetCurrentUserId());
-                throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
-            }
+            // Propagamos las excepciones de seguridad, no encontrado y validación sin modificación
+            _logger.LogWarning(ex, "ConsultorioService: Error controlado en UpdateAsync: {Message}", ex.Message);
+            throw;
         }
-
-        var existingConsultorio = await _consultorioRepository.GetByIdAsync(consultorioDto.IdConsultorio);
-        if (existingConsultorio == null)
+        catch (Exception ex)
         {
-            throw new NotFoundException("Consultorio", consultorioDto.IdConsultorio);
+            // Capturamos otras excepciones para logging centralizado y las re-lanzamos
+            _logger.LogError(ex, "ConsultorioService: Error no controlado en UpdateAsync: {Message}", ex.Message);
+            throw;
         }
-
-        // Mapear el DTO a la entidad existente
-        _mapper.Map(consultorioDto, existingConsultorio);
-
-        await _consultorioRepository.UpdateAsync(existingConsultorio);
-        await _consultorioRepository.SaveChangesAsync();
-
-        var userId = _currentUserService.GetCurrentUserId();
-
-        _logger.LogInformation("Usuario {UserId} actualizó el consultorio con ID {ConsultorioId}",
-            userId, existingConsultorio.IdConsultorio);
-
-        // Registrar acción en el servicio de auditoría
-        await _auditService.RegisterActionAsync(
-            "Update",
-            "Consultorio",
-            existingConsultorio.IdConsultorio,
-            userId,
-            JsonConvert.SerializeObject(new { consultorio = consultorioDto }));
-
-        // Devolver el consultorio actualizado como DTO
-        return _mapper.Map<ConsultorioDto>(existingConsultorio);
     }
 
     /// <summary>
@@ -179,42 +143,23 @@ public class ConsultorioService : IConsultorioService
     /// </summary>
     public async Task<bool> DeleteAsync(Guid id)
     {
-        // Verificar permiso para eliminar consultorios usando permisos granulares
-        if (!await _currentUserService.HasPermisoAsync(ConsultoriosPermissions.Delete))
+        try
         {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó eliminar un consultorio sin el permiso requerido",
-                _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+            _logger.LogInformation("ConsultorioService: Delegando DeleteAsync al servicio especializado");
+            return await _consultorioManagementService.DeleteAsync(id);
         }
-
-        var consultorio = await _consultorioRepository.GetByIdAsync(id);
-        if (consultorio == null)
+        catch (Exception ex) when (ex is ForbiddenAccessException || ex is NotFoundException)
         {
-            throw new NotFoundException("Consultorio", id);
+            // Propagamos las excepciones de seguridad y no encontrado sin modificación
+            _logger.LogWarning(ex, "ConsultorioService: Error controlado en DeleteAsync: {Message}", ex.Message);
+            throw;
         }
-
-        // Aquí podríamos agregar validaciones adicionales como verificar que el consultorio
-        // no tenga entidades relacionadas antes de eliminarlo
-
-        await _consultorioRepository.RemoveAsync(consultorio);
-        var result = await _consultorioRepository.SaveChangesAsync();
-
-        if (result > 0)
+        catch (Exception ex)
         {
-            var userId = _currentUserService.GetCurrentUserId();
-            _logger.LogInformation("Usuario {UserId} eliminó el consultorio con ID {ConsultorioId}",
-                userId, id);
-
-            // Registrar acción en el servicio de auditoría
-            await _auditService.RegisterActionAsync(
-                "Delete",
-                "Consultorio",
-                id,
-                userId,
-                JsonConvert.SerializeObject(new { id = id }));
+            // Capturamos otras excepciones para logging centralizado y las re-lanzamos
+            _logger.LogError(ex, "ConsultorioService: Error no controlado en DeleteAsync: {Message}", ex.Message);
+            throw;
         }
-
-        return result > 0;
     }
 
     /// <summary>
@@ -224,12 +169,17 @@ public class ConsultorioService : IConsultorioService
     /// <returns>True si existe, False en caso contrario</returns>
     public async Task<bool> ExistsByIdAsync(Guid id)
     {
-        if (id == Guid.Empty)
+        try
         {
-            return false;
+            _logger.LogInformation("ConsultorioService: Delegando ExistsByIdAsync al servicio especializado");
+            return await _consultorioManagementService.ExistsByIdAsync(id);
         }
-        
-        var consultorio = await _consultorioRepository.GetByIdAsync(id);
-        return consultorio != null;
+        catch (Exception ex)
+        {
+            // Este método no debería lanzar excepciones relacionadas con permisos
+            // ya que es una verificación básica, pero podemos capturar errores técnicos
+            _logger.LogError(ex, "ConsultorioService: Error en ExistsByIdAsync: {Message}", ex.Message);
+            throw;
+        }
     }
 }
