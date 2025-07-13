@@ -63,7 +63,13 @@ public static class DependencyInjection
         // Servicios de permisos especializados (sin fachada)
         services.AddScoped<IRolPermisoService, RolPermisoService>();
         services.AddScoped<IConsultorioService, ConsultorioService>();
+        
+        // Servicios de citas (patrón fachada)
+        services.AddScoped<ICitaManagementService, CitaManagementService>();
+        services.AddScoped<ICitaValidationService, CitaValidationService>();
+        services.AddScoped<ICitaNotificacionService, CitaNotificacionService>();
         services.AddScoped<ICitaService, CitaService>();
+        
         services.AddScoped<IRecordatorioService, RecordatorioService>();
         
         // Registrar CurrentUserResolver (versión simplificada para romper dependencias circulares)
