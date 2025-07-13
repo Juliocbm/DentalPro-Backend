@@ -3,9 +3,9 @@ using DentalPro.Application.DTOs.Recordatorios;
 namespace DentalPro.Application.Interfaces.IServices;
 
 /// <summary>
-/// Interfaz de fachada para el servicio de recordatorios de citas
+/// Interfaz para el servicio de gestión básica de recordatorios (CRUD)
 /// </summary>
-public interface IRecordatorioService : IRecordatorioManagementService, IRecordatorioNotificacionService
+public interface IRecordatorioManagementService
 {
     /// <summary>
     /// Obtiene todos los recordatorios de una cita
@@ -26,16 +26,6 @@ public interface IRecordatorioService : IRecordatorioManagementService, IRecorda
     /// Actualiza un recordatorio existente
     /// </summary>
     Task<RecordatorioDto> UpdateAsync(RecordatorioUpdateDto recordatorioDto);
-    
-    /// <summary>
-    /// Marca un recordatorio como enviado
-    /// </summary>
-    Task MarkAsSentAsync(Guid id);
-    
-    /// <summary>
-    /// Obtiene recordatorios pendientes de envío
-    /// </summary>
-    Task<IEnumerable<RecordatorioDto>> GetPendingAsync();
     
     /// <summary>
     /// Elimina un recordatorio
