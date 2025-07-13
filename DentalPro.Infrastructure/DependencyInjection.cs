@@ -62,6 +62,9 @@ public static class DependencyInjection
         services.AddScoped<IPermisoAssignmentService, PermisoAssignmentService>();
         // Servicios de permisos especializados (sin fachada)
         services.AddScoped<IRolPermisoService, RolPermisoService>();
+        
+        // Servicios de consultorio (patrón fachada)
+        services.AddScoped<IConsultorioManagementService, ConsultorioManagementService>();
         services.AddScoped<IConsultorioService, ConsultorioService>();
         
         // Servicios de citas (patrón fachada)
