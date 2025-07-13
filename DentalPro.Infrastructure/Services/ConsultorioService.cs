@@ -46,6 +46,8 @@ public class ConsultorioService : IConsultorioService
         _consultorioStaffService = consultorioStaffService ?? throw new ArgumentNullException(nameof(consultorioStaffService));
     }
 
+    #region Operaciones CRUD de Consultorios
+
     /// <summary>
     /// Obtiene todos los consultorios
     /// </summary>
@@ -187,6 +189,10 @@ public class ConsultorioService : IConsultorioService
         }
     }
 
+    #endregion
+
+    #region Gestión de Personal de Consultorio
+
     /// <summary>
     /// Obtiene todos los doctores asociados a un consultorio específico
     /// </summary>
@@ -306,4 +312,6 @@ public class ConsultorioService : IConsultorioService
             throw;
         }
     }
+
+    #endregion
 }
