@@ -22,13 +22,16 @@ public class ConsultorioAccessHandler : AuthorizationHandler<ConsultorioAccessRe
         AuthorizationHandlerContext context, 
         ConsultorioAccessRequirement requirement)
     {
-        // Permitir acceso a administradores siempre
-        if (context.User.IsInRole("Administrador"))
+        // Permitir acceso a SuperUsuarios siempre - ellos pueden acceder a datos de cualquier consultorio
+        if (context.User.IsInRole("SuperUsuario"))
         {
-            _logger?.LogInformation("Acceso permitido a usuario con rol Administrador");
+            _logger?.LogInformation("Acceso permitido a usuario con rol SuperUsuario");
             context.Succeed(requirement);
             return Task.CompletedTask;
         }
+        
+        // Los Administradores ya no tienen bypass automático, deben pertenecer al mismo consultorio
+        // para mantener la separación de datos entre consultorios
 
         // Verificar si tiene el claim necesario
         if (!context.User.HasClaim(c => c.Type == "IdConsultorio"))

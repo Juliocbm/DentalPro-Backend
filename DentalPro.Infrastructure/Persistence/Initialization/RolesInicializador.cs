@@ -54,8 +54,16 @@ public class RolesInicializador
                 new Rol
                 {
                     IdRol = Guid.NewGuid(),
+                    Nombre = "SuperUsuario",
+                    Descripcion = "Super usuario con acceso a todo el sistema, incluyendo datos de todos los consultorios",
+                    EsSistema = true,
+                    Activo = true
+                },
+                new Rol
+                {
+                    IdRol = Guid.NewGuid(),
                     Nombre = "Administrador",
-                    Descripcion = "Administrador del sistema con acceso completo",
+                    Descripcion = "Administrador con acceso completo limitado a su propio consultorio",
                     EsSistema = true,
                     Activo = true
                 },
@@ -118,9 +126,32 @@ public class RolesInicializador
         {
             var rolPermisos = new List<RolPermiso>();
             
-            // 1. Rol: Administrador - Todos los permisos
+            // 1. Rol: SuperUsuario - Absolutamente todos los permisos sin restricción
+            var rolSuperUsuario = roles.FirstOrDefault(r => r.Nombre == "SuperUsuario");
+            if (rolSuperUsuario != null)
+            {
+                // Para el SuperUsuario, asignar todos los permisos disponibles sin restricciones
+                foreach (var permiso in permisos)
+                {
+                    rolPermisos.Add(new RolPermiso
+                    {
+                        IdRol = rolSuperUsuario.IdRol,
+                        IdPermiso = permiso.IdPermiso
+                    });
+                }
+            }
+            
+            // 2. Rol: Administrador - Todos los permisos excepto los que trascienden consultorios
             var rolAdmin = roles.First(r => r.Nombre == "Administrador");
-            foreach (var permiso in permisos)
+            
+            // Lista de permisos que trascienden límites de consultorio y no deberían asignarse a Administrador
+            var permisosExcluidosAdmin = new[] {
+                "usuarios.view.all-consultorios",
+                "consultorios.view.all"
+            };
+            
+            // Para el administrador, asignar todos los permisos EXCEPTO los excluidos
+            foreach (var permiso in permisos.Where(p => !permisosExcluidosAdmin.Contains(p.Codigo)))
             {
                 rolPermisos.Add(new RolPermiso
                 {

@@ -47,13 +47,16 @@ namespace DentalPro.Api.Infrastructure.Authorization
                 return;
             }
 
-            // Bypass para administradores: siempre tienen todos los permisos
-            if (context.User.IsInRole("Administrador"))
+            // Bypass para SuperUsuarios: siempre tienen todos los permisos
+            if (context.User.IsInRole("SuperUsuario"))
             {
-                _logger.LogInformation("Usuario administrador accediendo a recurso. Otorgando permiso automáticamente.");
+                _logger.LogInformation("SuperUsuario accediendo a recurso. Otorgando permiso automáticamente.");
                 context.Succeed(requirement);
                 return;
             }
+            
+            // Los Administradores ya no tienen bypass automático, deben tener el permiso específico
+            // para mantener el principio de menor privilegio y la separación por consultorio
 
             try
             {

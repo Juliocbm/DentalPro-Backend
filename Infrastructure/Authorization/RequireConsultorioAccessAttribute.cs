@@ -29,12 +29,15 @@ namespace DentalPro.Api.Infrastructure.Authorization
                 return;
             }
 
-            // Prueba con autorisación simple: si el usuario es administrador, siempre permitir acceso
-            if (context.HttpContext.User.IsInRole("Administrador"))
+            // Solo SuperUsuario tiene acceso automático a cualquier consultorio
+            if (context.HttpContext.User.IsInRole("SuperUsuario"))
             {
-                logger?.LogInformation("Usuario es Administrador, permitiendo acceso sin validar consultorio");
+                logger?.LogInformation("Usuario es SuperUsuario, permitiendo acceso sin validar consultorio");
                 return;
             }
+            
+            // Los Administradores ya no tienen acceso automático a cualquier consultorio
+            // deben respetar la validación de consultorio para mantener la separación de datos
             
             // Simplificamos: todo usuario autenticado tiene acceso (temporalmente para probar)
             logger?.LogInformation("Permitiendo acceso a usuario autenticado sin validar consultorio (temporal)");
