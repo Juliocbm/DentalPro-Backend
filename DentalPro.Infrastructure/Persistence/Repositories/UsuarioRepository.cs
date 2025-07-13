@@ -236,7 +236,7 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
             .FirstOrDefaultAsync(u => u.IdUsuario == idUsuario);
 
         return usuario?.Permisos
-            .Select(p => p.Permiso?.Nombre ?? string.Empty)
+            .Select(p => p.Permiso?.Codigo ?? string.Empty) // Usar Codigo en lugar de Nombre
             .Where(p => !string.IsNullOrEmpty(p))
             .ToList() ?? new List<string>();
     }
@@ -348,10 +348,10 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
         return true;
     }
     
-    public async Task<bool> TienePermisoDirectoAsync(Guid idUsuario, string nombrePermiso)
+    public async Task<bool> TienePermisoDirectoAsync(Guid idUsuario, string codigoPermiso)
     {
         var permisos = await GetUserPermisosAsync(idUsuario);
-        return permisos.Any(p => p.ToLower() == nombrePermiso.ToLower());
+        return permisos.Any(p => p.ToLower() == codigoPermiso.ToLower());
     }
     
     public async Task<bool> HasRolAsync(Guid idUsuario, string rolNombre)
@@ -369,7 +369,7 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
                  r.Rol.Nombre.ToLower() == rolNombre.ToLower());
     }
     
-    public async Task<bool> TieneRolPermisoAsync(Guid idRol, string nombrePermiso)
+    public async Task<bool> TieneRolPermisoAsync(Guid idRol, string codigoPermiso)
     {
         var rolPermisoRepository = new RolPermisoRepository(_context);
         var rolPermiso = await rolPermisoRepository.GetByRolIdAsync(idRol);
@@ -379,6 +379,6 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
             
         return rolPermiso
             .Any(rp => rp.Permiso != null && 
-                 rp.Permiso.Nombre.ToLower() == nombrePermiso.ToLower());
+                 rp.Permiso.Codigo.ToLower() == codigoPermiso.ToLower());
     }
 }

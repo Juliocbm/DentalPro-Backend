@@ -164,9 +164,9 @@ public class CurrentUserService : ICurrentUserService
     /// <summary>
     /// Verifica si el usuario actual tiene un permiso específico
     /// </summary>
-    public async Task<bool> HasPermisoAsync(string permisoNombre)
+    public async Task<bool> HasPermisoAsync(string permisoCode)
     {
-        if (string.IsNullOrEmpty(permisoNombre))
+        if (string.IsNullOrEmpty(permisoCode))
         {
             return false;
         }
@@ -174,68 +174,78 @@ public class CurrentUserService : ICurrentUserService
         var userId = GetCurrentUserId();
         var cacheKey = $"UserPermisos_{userId}";
         
+        _logger.LogDebug("Verificando permiso {PermisoCode} para el usuario {UserId}", permisoCode, userId);
+        
         // Verificar primero si ya tenemos los permisos en caché
         if (_cache.TryGetValue(cacheKey, out IEnumerable<string> cachedPermisos))
         {
-            return cachedPermisos.Any(p => p.Equals(permisoNombre, StringComparison.OrdinalIgnoreCase));
+            var tienePermiso = cachedPermisos.Any(p => p.Equals(permisoCode, StringComparison.OrdinalIgnoreCase));
+            _logger.LogDebug("Permiso {PermisoCode} encontrado en caché: {TienePermiso}", permisoCode, tienePermiso);
+            return tienePermiso;
         }
 
+        _logger.LogDebug("Permisos no encontrados en caché para el usuario {UserId}, consultando repositorios", userId);
+        
         // Si no están en caché, obtenerlos directamente del repositorio
         try
         {
-            // Obtenemos el usuario con sus relaciones
-            var user = await _usuarioRepository.GetByIdWithRolesAndPermisosAsync(userId);
-            if (user == null)
-            {
-                _logger.LogWarning("Usuario con ID {UserId} no encontrado", userId);
-                return false;
-            }
-            
             // Verificar permisos directos
-            var tienePermisoDirecto = await _usuarioRepository.TienePermisoDirectoAsync(userId, permisoNombre);
+            var tienePermisoDirecto = await _usuarioRepository.TienePermisoDirectoAsync(userId, permisoCode);
+            _logger.LogDebug("Usuario {UserId} tiene permiso directo {PermisoCode}: {TienePermiso}", userId, permisoCode, tienePermisoDirecto);
             
             // Si no tiene el permiso directo, verificar permisos de roles
             bool tienePermisoRol = false;
             if (!tienePermisoDirecto)
             {
                 var roles = await _usuarioRepository.GetRolesAsync(userId);
+                _logger.LogDebug("Usuario {UserId} tiene {CantidadRoles} roles asignados", userId, roles.Count());
+                
                 foreach (var rol in roles)
                 {
-                    if (await _usuarioRepository.TieneRolPermisoAsync(rol.IdRol, permisoNombre))
+                    _logger.LogDebug("Verificando si rol {RolId} ({RolNombre}) tiene permiso {PermisoCode}", rol.IdRol, rol.Nombre, permisoCode);
+                    if (await _usuarioRepository.TieneRolPermisoAsync(rol.IdRol, permisoCode))
                     {
                         tienePermisoRol = true;
+                        _logger.LogDebug("Permiso {PermisoCode} encontrado en rol {RolId} ({RolNombre})", permisoCode, rol.IdRol, rol.Nombre);
                         break;
                     }
                 }
             }
             
-            // Obtener todos los nombres de permisos para el caché
+            // Obtener todos los códigos de permisos para el caché
             var permisosDirectos = await _usuarioRepository.GetUsuarioPermisosAsync(userId);
+            _logger.LogDebug("Usuario {UserId} tiene {CantidadPermisosDirectos} permisos directos", userId, permisosDirectos.Count());
             
             // Obtener permisos de roles
             var permisosRoles = new HashSet<string>();
             var userRoles = await _usuarioRepository.GetRolesAsync(userId);
             foreach (var rol in userRoles)
             {
-                // Usar el repositorio inyectado en lugar de crear una nueva instancia
                 var permisos = await _rolPermisoRepository.GetPermisosByRolIdAsync(rol.IdRol);
                 foreach (var permiso in permisos.Where(p => p != null))
                 {
-                    permisosRoles.Add(permiso.Nombre);
+                    permisosRoles.Add(permiso.Codigo); // Usar Codigo en lugar de Nombre
                 }
             }
+            _logger.LogDebug("Usuario {UserId} tiene {CantidadPermisosRoles} permisos vía roles", userId, permisosRoles.Count);
             
             // Combinar todos los permisos
             var todosPermisos = permisosDirectos.Union(permisosRoles).ToList();
             
+            // Log detallado de los permisos para depuración
+            _logger.LogDebug("Permisos consolidados para el usuario {UserId}: {Permisos}", 
+                userId, string.Join(", ", todosPermisos));
+            
             // Guardar en caché para consultas futuras
             _cache.Set(cacheKey, todosPermisos, _userCacheDuration);
+            _logger.LogDebug("Permisos guardados en caché para el usuario {UserId} por {DuracionCache} segundos", 
+                userId, _userCacheDuration.TotalSeconds);
             
             return tienePermisoDirecto || tienePermisoRol;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al verificar permiso {PermisoNombre} para usuario {UserId}", permisoNombre, userId);
+            _logger.LogError(ex, "Error al verificar permiso {PermisoCode} para usuario {UserId}", permisoCode, userId);
             return false;
         }
     }

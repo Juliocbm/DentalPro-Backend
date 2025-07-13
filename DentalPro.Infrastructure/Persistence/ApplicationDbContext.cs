@@ -42,6 +42,48 @@ namespace DentalPro.Infrastructure.Persistence
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
             
+            // Configuración de entidad Usuario
+            modelBuilder.Entity<Usuario>(builder => {
+                builder.ToTable("Usuario", "seguridad");
+                builder.HasKey(u => u.IdUsuario);
+                
+                builder.Property(u => u.Nombre)
+                    .HasMaxLength(100)
+                    .IsRequired();
+                                        
+                builder.Property(u => u.Correo)
+                    .HasMaxLength(150)
+                    .IsRequired();
+                    
+                builder.Property(u => u.PasswordHash)
+                    .HasMaxLength(500)
+                    .IsRequired();
+            });
+
+            // Configuración de RefreshToken
+            modelBuilder.Entity<RefreshToken>(builder => {
+                builder.ToTable("RefreshToken", "seguridad");
+                builder.HasKey(rt => rt.IdRefreshToken);
+                
+                builder.Property(rt => rt.Token)
+                    .HasMaxLength(500)
+                    .IsRequired();                    
+            });
+            
+            // Configuración de UsuarioRol
+            modelBuilder.Entity<UsuarioRol>(builder => {
+                builder.ToTable("UsuarioRol", "seguridad");
+                builder.HasKey(ur => new { ur.IdUsuario, ur.IdRol });
+                
+                builder.HasOne(ur => ur.Usuario)
+                    .WithMany(u => u.Roles)
+                    .HasForeignKey(ur => ur.IdUsuario);
+                    
+                builder.HasOne(ur => ur.Rol)
+                    .WithMany(r => r.Usuarios)
+                    .HasForeignKey(ur => ur.IdRol);
+            });
+            
             // Configuración de DoctorDetail como entidad independiente
             modelBuilder.Entity<DoctorDetail>(builder =>
             {
@@ -66,38 +108,70 @@ namespace DentalPro.Infrastructure.Persistence
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<Permiso>()
-               .HasKey(rp => new { rp.IdPermiso });
+            // Configuración de entidad Permiso
+            modelBuilder.Entity<Permiso>(builder => {
+                builder.ToTable("Permiso", "seguridad");
+                builder.HasKey(p => p.IdPermiso);
+                
+                builder.Property(p => p.Codigo)
+                    .HasMaxLength(100)
+                    .IsRequired();
+                    
+                builder.Property(p => p.Nombre)
+                    .HasMaxLength(100)
+                    .IsRequired();
+                    
+                builder.Property(p => p.Descripcion)
+                    .HasMaxLength(500);
+                    
+                builder.Property(p => p.Modulo)
+                    .HasMaxLength(50);
+            });
+
+            // Configuración de entidad Rol
+            modelBuilder.Entity<Rol>(builder => {
+                builder.ToTable("Rol", "seguridad");
+                builder.HasKey(r => r.IdRol);
+                
+                builder.Property(r => r.Nombre)
+                    .HasMaxLength(50)
+                    .IsRequired();
+                    
+                builder.Property(r => r.Descripcion)
+                    .HasMaxLength(200);
+            });
 
             // Configuración de clave primaria compuesta para RolPermiso
-            modelBuilder.Entity<RolPermiso>()
-                .HasKey(rp => new { rp.IdRol, rp.IdPermiso });
+            modelBuilder.Entity<RolPermiso>(builder => {
+                builder.ToTable("RolPermiso", "seguridad");
+                builder.HasKey(rp => new { rp.IdRol, rp.IdPermiso });
                 
-            // Configuración de relación muchos a muchos entre Rol y Permiso
-            modelBuilder.Entity<RolPermiso>()
-                .HasOne(rp => rp.Rol)
-                .WithMany(r => r.Permisos)
-                .HasForeignKey(rp => rp.IdRol);
-                
-            modelBuilder.Entity<RolPermiso>()
-                .HasOne(rp => rp.Permiso)
-                .WithMany(p => p.Roles)
-                .HasForeignKey(rp => rp.IdPermiso);
+                // Configuración de relación muchos a muchos entre Rol y Permiso
+                builder.HasOne(rp => rp.Rol)
+                    .WithMany(r => r.Permisos)
+                    .HasForeignKey(rp => rp.IdRol);
+                    
+                builder.HasOne(rp => rp.Permiso)
+                    .WithMany(p => p.Roles)
+                    .HasForeignKey(rp => rp.IdPermiso);
+            });
                 
             // Configuración de clave primaria compuesta para UsuarioPermiso
-            modelBuilder.Entity<UsuarioPermiso>()
-                .HasKey(up => new { up.IdUsuario, up.IdPermiso });
+            // Configuración de clave primaria compuesta para UsuarioPermiso y nombre de tabla
+            modelBuilder.Entity<UsuarioPermiso>(builder => {
+                builder.ToTable("UsuarioPermiso", "seguridad");
+                builder.HasKey(up => new { up.IdUsuario, up.IdPermiso });
                 
-            // Configuración de relación muchos a muchos entre Usuario y Permiso
-            modelBuilder.Entity<UsuarioPermiso>()
-                .HasOne(up => up.Usuario)
-                .WithMany(u => u.Permisos)
-                .HasForeignKey(up => up.IdUsuario);
+                // Configuración de relación muchos a muchos entre Usuario y Permiso
+                builder.HasOne(up => up.Usuario)
+                    .WithMany(u => u.Permisos)
+                    .HasForeignKey(up => up.IdUsuario);
+                    
+                builder.HasOne(up => up.Permiso)
+                    .WithMany(p => p.Usuarios)
+                    .HasForeignKey(up => up.IdPermiso);
+            });
                 
-            modelBuilder.Entity<UsuarioPermiso>()
-                .HasOne(up => up.Permiso)
-                .WithMany(p => p.Usuarios)
-                .HasForeignKey(up => up.IdPermiso);
                 
             // Configuración de AuditLog
             modelBuilder.Entity<AuditLog>(builder =>
