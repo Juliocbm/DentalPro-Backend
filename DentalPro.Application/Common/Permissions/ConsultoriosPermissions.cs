@@ -5,6 +5,8 @@ namespace DentalPro.Application.Common.Permissions;
 /// </summary>
 public static class ConsultoriosPermissions
 {
+    #region Consultorios CRUD
+    
     /// <summary>
     /// Permiso para ver detalles de un consultorio
     /// </summary>
@@ -29,4 +31,30 @@ public static class ConsultoriosPermissions
     /// Permiso para eliminar consultorios
     /// </summary>
     public const string Delete = "consultorios.delete";
+    
+    #endregion
+    
+    #region Gestión de personal
+    
+    /// <summary>
+    /// Permiso para ver doctores de un consultorio
+    /// </summary>
+    public const string ViewDoctores = "consultorios.view.doctores";
+    
+    /// <summary>
+    /// Permiso para ver asistentes de un consultorio
+    /// </summary>
+    public const string ViewAsistentes = "consultorios.view.asistentes";
+    
+    /// <summary>
+    /// Permiso para asignar personal a un consultorio
+    /// </summary>
+    public const string AssignStaff = "consultorios.assign.staff";
+    
+    /// <summary>
+    /// Permiso para desvincular personal de un consultorio
+    /// </summary>
+    public const string RemoveStaff = "consultorios.remove.staff";
+    
+    #endregion
 }
