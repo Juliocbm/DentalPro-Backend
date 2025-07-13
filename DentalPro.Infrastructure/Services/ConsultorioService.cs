@@ -24,19 +24,22 @@ public class ConsultorioService : IConsultorioService
     private readonly IMapper _mapper;
     private readonly ILogger<ConsultorioService> _logger;
     private readonly IAuditService _auditService;
+    private readonly IConsultorioManagementService _consultorioManagementService;
 
     public ConsultorioService(
         IConsultorioRepository consultorioRepository,
         ICurrentUserService currentUserService,
         IMapper mapper,
         ILogger<ConsultorioService> logger,
-        IAuditService auditService)
+        IAuditService auditService,
+        IConsultorioManagementService consultorioManagementService)
     {
         _consultorioRepository = consultorioRepository;
         _currentUserService = currentUserService;
         _mapper = mapper;
         _logger = logger;
         _auditService = auditService;
+        _consultorioManagementService = consultorioManagementService;
     }
 
     /// <summary>
@@ -61,34 +64,23 @@ public class ConsultorioService : IConsultorioService
     /// </summary>
     public async Task<ConsultorioDto?> GetByIdAsync(Guid id)
     {
-        // Verificar permiso usando permisos granulares
-        if (!await _currentUserService.HasPermisoAsync(ConsultoriosPermissions.ViewDetail))
+        try
         {
-            _logger.LogWarning("Acceso denegado: Usuario {UserId} no tiene permiso para ver detalles de consultorio",
-                _currentUserService.GetCurrentUserId());
-            throw new ForbiddenAccessException(ErrorMessages.InsufficientPermissions);
+            _logger.LogInformation("ConsultorioService: Delegando GetByIdAsync al servicio especializado");
+            return await _consultorioManagementService.GetByIdAsync(id);
         }
-
-        // Verificación explícita de acceso a consultorio
-        var hasGlobalAccess = await _currentUserService.HasPermisoAsync(ConsultoriosPermissions.ViewAll);
-        if (!hasGlobalAccess)
+        catch (Exception ex) when (ex is ForbiddenAccessException || ex is NotFoundException)
         {
-            var userConsultorioId = _currentUserService.GetCurrentConsultorioId();
-            if (id != userConsultorioId)
-            {
-                _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó acceder a un consultorio diferente",
-                    _currentUserService.GetCurrentUserId());
-                throw new ForbiddenAccessException(ErrorMessages.DifferentConsultorio);
-            }
+            // Propagamos las excepciones de seguridad y no encontrado sin modificación
+            _logger.LogWarning(ex, "ConsultorioService: Error controlado en GetByIdAsync: {Message}", ex.Message);
+            throw;
         }
-
-        var consultorio = await _consultorioRepository.GetByIdAsync(id);
-        if (consultorio == null)
+        catch (Exception ex)
         {
-            return null;
+            // Capturamos otras excepciones para logging centralizado y las re-lanzamos
+            _logger.LogError(ex, "ConsultorioService: Error no controlado en GetByIdAsync: {Message}", ex.Message);
+            throw;
         }
-
-        return _mapper.Map<ConsultorioDto>(consultorio);
     }
 
     /// <summary>
