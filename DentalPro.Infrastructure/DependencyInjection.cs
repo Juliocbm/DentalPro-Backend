@@ -65,6 +65,7 @@ public static class DependencyInjection
         
         // Servicios de consultorio (patrón fachada)
         services.AddScoped<IConsultorioManagementService, ConsultorioManagementService>();
+        services.AddScoped<IConsultorioStaffService, ConsultorioStaffService>();
         services.AddScoped<IConsultorioService, ConsultorioService>();
         
         // Servicios de citas (patrón fachada)
