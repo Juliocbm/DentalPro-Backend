@@ -22,9 +22,14 @@ namespace DentalPro.Application.Interfaces.IServices
         Task<UsuarioDto?> GetByEmailAsync(string email);
 
         /// <summary>
-        /// Obtiene todos los usuarios de un consultorio específico
+        /// Obtiene todos los usuarios de un consultorio específico (usando int)
         /// </summary>
         Task<IEnumerable<UsuarioDto>> GetByConsultorioIdAsync(int consultorioId);
+        
+        /// <summary>
+        /// Obtiene todos los usuarios de un consultorio específico (usando Guid)
+        /// </summary>
+        Task<IEnumerable<UsuarioDto>> GetByConsultorioGuidAsync(Guid consultorioId);
 
         /// <summary>
         /// Verifica si existe un usuario con el ID especificado

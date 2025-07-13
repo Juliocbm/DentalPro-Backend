@@ -116,11 +116,25 @@ namespace DentalPro.Infrastructure.Services
         }
 
         /// <summary>
-        /// Obtiene todos los usuarios de un consultorio específico
+        /// Obtiene todos los usuarios de un consultorio específico (usando int)
         /// </summary>
         public async Task<IEnumerable<UsuarioDto>> GetByConsultorioIdAsync(int consultorioId)
         {
-            _logger.LogInformation("Obteniendo usuarios del consultorio: {ConsultorioId}", consultorioId);
+            _logger.LogInformation("Convirtiendo consultorioId int {ConsultorioIdInt} a Guid para obtener usuarios", consultorioId);
+            
+            // Convertir el id int a Guid
+            var guidConsultorioId = new Guid(BitConverter.GetBytes(consultorioId).Concat(new byte[12]).ToArray());
+            
+            // Delegar al método que trabaja con Guid directamente
+            return await GetByConsultorioGuidAsync(guidConsultorioId);
+        }
+
+        /// <summary>
+        /// Obtiene todos los usuarios de un consultorio específico (usando Guid)
+        /// </summary>
+        public async Task<IEnumerable<UsuarioDto>> GetByConsultorioGuidAsync(Guid consultorioId)
+        {
+            _logger.LogInformation("Obteniendo usuarios del consultorio (Guid): {ConsultorioId}", consultorioId);
             
             // Verificar permiso para listar usuarios
             if (!await _currentUserService.HasPermisoAsync(UsuariosPermissions.ViewAll))
@@ -130,28 +144,34 @@ namespace DentalPro.Infrastructure.Services
                 throw new ForbiddenAccessException(ErrorCodes.InsufficientPermissions, ErrorMessages.InsufficientPermissions);
             }
             
-            // Convertir el id int a Guid
-            var guidConsultorioId = new Guid(BitConverter.GetBytes(consultorioId).Concat(new byte[12]).ToArray());
-            
             // Verificar que sea el consultorio del usuario actual o tenga permisos para ver todos los consultorios
             var currentConsultorioId = _currentUserService.GetCurrentConsultorioId();
             var currentUserId = _currentUserService.GetCurrentUserId();
             var isSuperUsuario = await _usuarioRepository.HasRolAsync(currentUserId, "SuperUsuario");
+            var isAdministrador = await _usuarioRepository.HasRolAsync(currentUserId, "Administrador");
             var hasViewAllConsultoriosPermiso = await _currentUserService.HasPermisoAsync(UsuariosPermissions.ViewAllConsultorios);
             
+            // Verificar si los consultorios son diferentes
+            bool isDifferentConsultorio = !consultorioId.Equals(currentConsultorioId);
+            
+            _logger.LogDebug("Verificando acceso a consultorio: Current={Current}, Requested={Requested}, Different={IsDifferent}", 
+                currentConsultorioId, consultorioId, isDifferentConsultorio);
+            
             // Solo SuperUsuarios o usuarios con el permiso ViewAllConsultorios pueden ver usuarios de otros consultorios
-            if (guidConsultorioId != currentConsultorioId && !isSuperUsuario && !hasViewAllConsultoriosPermiso)
+            if (isDifferentConsultorio && !isSuperUsuario && !hasViewAllConsultoriosPermiso)
             {
-                _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó listar usuarios de otro consultorio sin tener rol SuperUsuario ni permiso ViewAllConsultorios", 
-                    currentUserId);
+                _logger.LogWarning("Acceso denegado: Usuario {UserId} intentó listar usuarios de otro consultorio sin tener rol SuperUsuario ni permiso ViewAllConsultorios. " + 
+                    "Current: {CurrentConsultorio}, Requested: {RequestedConsultorio}", 
+                    currentUserId, currentConsultorioId, consultorioId);
                 throw new ForbiddenAccessException(ErrorCodes.InvalidConsultorio, ErrorMessages.DifferentConsultorio);
             }
             
-            _logger.LogInformation("Usuario {UserId} accediendo a lista de usuarios del consultorio {ConsultorioId}. "
-                + "Es SuperUsuario: {IsSuperUsuario}, Tiene permiso ViewAllConsultorios: {HasViewAllConsultoriosPermiso}", 
-                currentUserId, guidConsultorioId, isSuperUsuario, hasViewAllConsultoriosPermiso);
+            _logger.LogInformation("Usuario {UserId} accediendo a lista de usuarios del consultorio {ConsultorioId}. " + 
+                "Es SuperUsuario: {IsSuperUsuario}, Es Administrador: {IsAdministrador}, " + 
+                "Tiene permiso ViewAllConsultorios: {HasViewAllConsultoriosPermiso}, Consultorios diferentes: {IsDifferent}", 
+                currentUserId, consultorioId, isSuperUsuario, isAdministrador, hasViewAllConsultoriosPermiso, isDifferentConsultorio);
 
-            var usuarios = await _usuarioRepository.GetByConsultorioAsync(guidConsultorioId);
+            var usuarios = await _usuarioRepository.GetByConsultorioAsync(consultorioId);
             return _mapper.Map<IEnumerable<UsuarioDto>>(usuarios);
         }
 

@@ -99,13 +99,11 @@ public class UsuarioService : IUsuarioService
     public async Task<IEnumerable<UsuarioDto>> GetAllByConsultorioAsync(Guid idConsultorio)
     {
         _logger.LogInformation("Delegando GetAllByConsultorioAsync a UsuarioManagementService para consultorio: {ConsultorioId}", idConsultorio);
-        
-        // Convertir de Guid a int para el servicio especializado
-        var consultorioIdInt = BitConverter.ToInt32(idConsultorio.ToByteArray(), 0);
-        
+
         try
         {
-            return await _usuarioManagementService.GetByConsultorioIdAsync(consultorioIdInt);
+            // Usar directamente el GUID sin conversiones intermedias
+            return await _usuarioManagementService.GetByConsultorioGuidAsync(idConsultorio);
         }
         catch (Exception ex)
         {
