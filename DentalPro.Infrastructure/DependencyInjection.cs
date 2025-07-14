@@ -47,7 +47,8 @@ public static class DependencyInjection
         services.AddScoped<IRecordatorioRepository, RecordatorioRepository>();
         services.AddScoped<IDoctorRepository, DoctorRepository>();
         
-        // Registrar servicios
+        // Registrar servicios de autenticación (patrón fachada)
+        services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
         
         // Servicios de usuario
