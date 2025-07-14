@@ -49,6 +49,7 @@ public static class DependencyInjection
         
         // Registrar servicios de autenticación (patrón fachada)
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IAuthService, AuthService>();
         
         // Servicios de usuario
